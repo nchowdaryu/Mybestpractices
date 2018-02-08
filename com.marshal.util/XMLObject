@@ -38,10 +38,10 @@ public class ICAPSNotificationMessage {
 	private String schemaInstance = "http://www.w3.org/2001/XMLSchema-instance";
 	
 	@XmlAttribute(name = "xmlns:icap", required = true)
-	private String icapSchemaNameSpace = "http://icap.vanguard.com/icap";
+	private String icapSchemaNameSpace = "http://icap.company.com/icap";
 	
 	@XmlAttribute(name = "xsi:schemaLocation", required = true)
-	private String schemaLoc = "http://icap.vanguard.com/icap icap-large-transaction-notification.xsd";
+	private String schemaLoc = "http://icap.company.com/icap icap-large-transaction-notification.xsd";
 	//Message elements.	
 
 	@XmlElement(name = "notification-status", required = true)
