@@ -1,0 +1,130 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.springframework.stereotype.Component;
+
+import com.company.corp.vault.password.CredentialsRetriever;
+import com.company.corp.vault.password.ICredentialsRetriever;
+import com.company.retail.ltqtbatch.constants.LTQTBatchConstants;
+import com.company.service.technical.logging.LogFactory;
+import com.company.spring.core.config.support.PropertyLocator;
+
+@Component
+public class FTPClientUtil {
+
+	public FTPClient getFTPClient(){
+		String methodName ="getFTPClient";
+		FTPClient ftpClient = new FTPClient();
+		try {			
+
+			//Get Id-vault Query Strings & some other sensitive information
+
+			String serverAlias = PropertyLocator.getStringProperty(LTQTBatchConstants.LTB_BATCH_CONFIG_MODULE_FOLDER_NAME, "NON_LT_FTP_SERVER_ALIAS"); //"CATWINFTP.company.com"
+			String userIDVault = PropertyLocator.getStringProperty(LTQTBatchConstants.LTB_BATCH_CONFIG_MODULE_FOLDER_NAME, "NON_LT_FTP_USERID_IDVAULT");
+			String passwordVault = PropertyLocator.getStringProperty(LTQTBatchConstants.LTB_BATCH_CONFIG_MODULE_FOLDER_NAME, "NON_LT_FTP_PASSWORD_IDVAULT");
+			int ftpPort = PropertyLocator.getIntegerProperty(LTQTBatchConstants.LTB_BATCH_CONFIG_MODULE_FOLDER_NAME, "FTP_PORT"); //21
+
+			//Reading from Id-Vault in regions
+			ICredentialsRetriever aCredentialsRetriever = new CredentialsRetriever();
+			String userID = aCredentialsRetriever.getCredentials(userIDVault); //"ftpid" 		 
+			String paswrd =aCredentialsRetriever.getCredentials(passwordVault);//"pass" 
+
+
+			//Connecting to Windows Server Share Drive alias
+			ftpClient.connect(serverAlias,ftpPort);
+			LogFactory.getLog().logReport(methodName," FTP Server Reply while connecting:"+ftpClient.getReplyString());
+
+			//Login to Windows Server Share Drive alias
+			ftpClient.login(userID,paswrd);
+
+			LogFactory.getLog().logReport(methodName,"FTP Server Reply after login:"+ftpClient.getReplyString());		
+			LogFactory.getLog().logReport(methodName,"Current Working Directory:"+ftpClient.printWorkingDirectory());
+		} catch (Exception e) {
+			LogFactory.getLog().logError(methodName, "Exception Occured while getting FTP Client object. Exception Details="+e, LTQTBatchConstants.GET_FTP_CLIENT_ERROR_CODE );
+			ftpClient = null;			
+		} 
+		return ftpClient;
+	}
+
+	public InputStream ftpFromShareDriveandRenameFile(String shareDrivePath,String fileName,FTPClient ftpClient, Boolean rename, String timestamp) {
+
+
+		String methodName = "ftpFromShareDriveandRenameFile";
+		InputStream fileToBeProcessed = null;
+		try{
+			//Check current working directory and change to required directory path and if not available create the directory.
+			LogFactory.getLog().logReport(methodName,"Current Working Directory:"+ftpClient.printWorkingDirectory());			
+
+			boolean success = ftpClient.changeWorkingDirectory(ftpClient.printWorkingDirectory()+shareDrivePath);
+
+			LogFactory.getLog().logReport(methodName,"Change directory status:"+success+ " & Current Working Directory: "+ftpClient.printWorkingDirectory());
+
+
+			ftpClient.enterLocalPassiveMode();
+			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+			if(rename){
+				String extension = fileName.substring(fileName.lastIndexOf('.')+1);
+				String renameFileName  = fileName.substring(0, fileName.length()-5)+"_"+timestamp+"."+extension;
+				ftpClient.rename(fileName, renameFileName);
+				fileToBeProcessed = ftpClient.retrieveFileStream(renameFileName);
+			}else{
+				fileToBeProcessed = ftpClient.retrieveFileStream(fileName);
+			}
+
+			LogFactory.getLog().logReport(methodName, "File Read completed for I/p file:"+fileName);		
+
+
+		}catch(Exception e){
+			LogFactory.getLog().logError(methodName,"Exception while getting a File from FTP Server. Exception Details="+e,LTQTBatchConstants.GET_FILE_FROM_FTP_SERVER_ERROR_CODE);
+
+		}
+
+		return fileToBeProcessed;
+	}
+
+	public void closeFTPClient(FTPClient ftpClient) throws IOException{
+
+		if(ftpClient.isConnected()){
+			ftpClient.logout();
+			ftpClient.disconnect();
+			LogFactory.getLog().logReport("closeFTPClient", "Connecton Closed for FTP Client: "+ftpClient);
+		}		
+	}
+
+	public boolean copyFileFromServerToFTPShareDrive(String shareDrivePath,String fileName, String copyFileServerPath, FTPClient client){
+		String methodName ="copyFileToFTPShareDrive";
+
+		boolean isSuccess = true;
+		try {			
+			//Check current working directory and change to required directory path and if not available create the directory.
+			LogFactory.getLog().logReport(methodName, "servers rply after login:"+client.printWorkingDirectory());
+
+			boolean success = client.changeWorkingDirectory(client.printWorkingDirectory()+shareDrivePath);			
+			LogFactory.getLog().logReport(methodName,success+" servers rply first attempt to change directory:"+client.getReplyString());
+
+			client.enterLocalPassiveMode();
+			client.setFileType(FTP.BINARY_FILE_TYPE);
+
+			final File serverFile = new File(copyFileServerPath);			
+			InputStream ips = new FileInputStream(serverFile);			
+			client.storeFile(fileName,ips);
+			ips.close(); //Closing input stream after writing file into Share drive path.
+
+			LogFactory.getLog().logReport(methodName, "FTP to Share drive completed for file:"+fileName);		
+
+
+		} catch(Exception e){
+			isSuccess = false;
+			LogFactory.getLog().logError(methodName,"Exception while copying File From Server To FTP Share Drive. Exception Details="+e,LTQTBatchConstants.PUT_FILE_TO_FTP_SERVER_ERROR_CODE);
+		}
+
+		return isSuccess;
+	}
+
+
+
+}
