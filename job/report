@@ -1,0 +1,243 @@
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.company.retail.ltqtbatch.common.utils.FTPClientUtil;
+import com.company.retail.ltqtbatch.common.utils.LTQTBatchUtil;
+import com.company.retail.ltqtbatch.constants.LTQTBatchConstants;
+import com.company.service.application.ltqtnotification.shared.helper.FundGroupComparator;
+import com.company.service.application.ltqtnotification.shared.helper.NonLTPortfolioFeedGenerator;
+import com.company.service.application.ltqtnotification.shared.helper.NonLTPortfolioReportChainedComparator;
+import com.company.service.application.ltqtnotification.shared.helper.PortfolioFundComparator;
+import com.company.service.application.ltqtnotification.shared.pojo.IgnoreTradeRecordInfo;
+import com.company.service.application.ltqtnotification.shared.pojo.NonLTPortfolioTradeSummary;
+import com.company.service.technical.logging.LogFactory;
+
+@Component
+public class NonLTFeedReport {
+
+	@Autowired
+	NonLTPortfolioFeedGenerator aNonLTPortfolioFeedGenerator;
+	
+	@Autowired
+	LTQTBatchUtil aLTQTBatchUtil;
+	
+	@Autowired
+	FTPClientUtil aFTPClientUtil;
+	
+	public boolean  generateCurrentDayNonLTReport(XSSFWorkbook wb, Map<String,LTQTFundsInfo> ltqtSystemFundsMap, String timestamp) throws IOException{
+		String methodName = "generateCurrentDayNonLTReport";
+		XSSFSheet sheet = wb.getSheet("v_CurrentSummary");
+		
+		XSSFRow row;		
+		Iterator<Row> tradeInputRows = sheet.iterator();		
+
+		List<IgnoreTradeRecordInfo> ignoreTradesList = new ArrayList<IgnoreTradeRecordInfo>();
+		int rowNumber = 0;
+		try {
+			while (tradeInputRows.hasNext()) {
+				row = (XSSFRow) tradeInputRows.next();
+				rowNumber = row.getRowNum();
+				if(rowNumber != 0){ //Skip Header
+
+					row.getCell(1).setCellType(XSSFCell.CELL_TYPE_STRING);
+					String tradingFund = row.getCell(1).getStringCellValue().trim();
+
+					LTQTFundsInfo matchingSystemFundInfo = ltqtSystemFundsMap.get(tradingFund);			
+
+					addToIgnoreTradeRecordsList(ltqtSystemFundsMap, row, ignoreTradesList, rowNumber, tradingFund, matchingSystemFundInfo);							
+
+				}
+			}
+		} catch (Exception e) {
+			LogFactory.getLog().logError(methodName, "Exception Occured while finding Ignore Records List at Row Number="+rowNumber+", Exception Details="+e, LTQTBatchConstants.FIND_IGNORE_RECORDS_ERROR_CODE);
+			
+		}
+		
+		int ignoreRecordsCount = ignoreTradesList.size();
+		LogFactory.getLog().logReport(methodName, "Non LT Ignore Trade list is created. Size="+ignoreRecordsCount);		
+		
+		if(ignoreRecordsCount < 1){
+			
+			LogFactory.getLog().logWarning(methodName, "There are no Ignore Trades from input file. So no need to do further processing.");
+			return false;
+		}
+		//To-do Should We write this Ignore Trades to any Unix path or FTP share drive?
+		
+		
+		//Iterate through Ignore Trade List and get unique Portfolio Fund Numbers
+		
+		List<NonLTPortfolioTradeSummary> nonLTPortfolioReportList = aNonLTPortfolioFeedGenerator.generateNonLTFeedPortfolioSummary(ignoreTradesList);		
+		
+		LogFactory.getLog().logReport(methodName, "Non LT Portfolio Trade Summary list is created. Size="+nonLTPortfolioReportList.size());		
+
+		return writeExcelNonLTFileANDftpToShareDrive(nonLTPortfolioReportList, timestamp, LTQTBatchConstants.NON_LT_SUMMARY_OUTPUT_FILE_EXTENSION_XLSX);
+		
+		
+	}
+
+	private void addToIgnoreTradeRecordsList(
+			Map<String, LTQTFundsInfo> ltqtSystemFundsMap, XSSFRow row,
+			List<IgnoreTradeRecordInfo> ignoreTradesList, int rowNumber,
+			String tradingFund, LTQTFundsInfo matchingSystemFundInfo) {
+		String methodName = "addToIgnoreTradeRecordsList";
+		if(null!=matchingSystemFundInfo){
+			BigDecimal systemFundLTLimit = matchingSystemFundInfo.getLtLimit();
+
+			row.getCell(5).setCellType(XSSFCell.CELL_TYPE_STRING);
+			BigDecimal inputTradeAmount = new BigDecimal(row.getCell(5).getStringCellValue().trim());
+			BigDecimal inputTradeAmountAbsValue = inputTradeAmount.abs();
+			//Compare absolute trade amount with fund LT Limit from the Systems Fund Input map
+
+			if(inputTradeAmountAbsValue.compareTo(systemFundLTLimit) == -1 ){ //Less than LT trade input
+				
+				String portfolioFund = matchingSystemFundInfo.getPortfolioFundNumber();
+				//Get Portfolio Fund Name & Fund Group from the Map now.
+				LTQTFundsInfo matchingSystemPortfolioFundInfo = ltqtSystemFundsMap.get(portfolioFund);
+				String portfolioFundName = matchingSystemPortfolioFundInfo.getFundName();				
+				String portfolioFundGroup = matchingSystemPortfolioFundInfo.getFundGroup();
+				//Excel Style.
+				ignoreTradesList.add(getIgnoreTradeRecord(tradingFund, portfolioFund, portfolioFundName, portfolioFundGroup, systemFundLTLimit, inputTradeAmount));
+
+			}
+
+		}else{
+			LogFactory.getLog().logWarning(methodName, "Fund Number:"+tradingFund+" NOT Found in LTQT System Funds information map, hence NOT Processing it. File Row Number="+rowNumber);
+		}
+
+
+	}
+
+	private IgnoreTradeRecordInfo getIgnoreTradeRecord(String tradingFund, String portfolioFund, String portfolioFundName,
+			String portfolioFundGroup, BigDecimal systemFundLTLimit,
+			BigDecimal inputTradeAmount) {
+		IgnoreTradeRecordInfo ignoreTrade = new IgnoreTradeRecordInfo();
+		ignoreTrade.setFundNumber(tradingFund);
+		ignoreTrade.setPortfolioFundNumber(portfolioFund);
+		ignoreTrade.setPortfolioFundName(portfolioFundName);
+		ignoreTrade.setPortfolioFundGroup(portfolioFundGroup);
+		ignoreTrade.setTradeAmount(inputTradeAmount);
+		ignoreTrade.setLtLimit(systemFundLTLimit);
+		ignoreTrade.setIgnoreReason("Trade amount is less than LT.");
+
+		return ignoreTrade;
+	}
+
+
+	@SuppressWarnings("unchecked")
+	public boolean writeExcelNonLTFileANDftpToShareDrive(List<NonLTPortfolioTradeSummary> nonLTPortfolioReportList, String timestamp, String fileExtension){
+		boolean isSuccess = true;
+		String methodName = "writeExcelNonLTFileANDftpToShareDrive";
+		try {
+			//Sort the List of objects before writing to a file.
+			Collections.sort(nonLTPortfolioReportList, new NonLTPortfolioReportChainedComparator(new FundGroupComparator(), new PortfolioFundComparator())  );		
+			LogFactory.getLog().logReport(methodName, "Non LT Trade Report Sorted as per requirements.");		
+
+			List<String> headerInfo = new ArrayList<String>();		
+			headerInfo.add("Portfolio Fund");
+			headerInfo.add("Portfolio Fund Name");
+			headerInfo.add("Fund Group");
+			headerInfo.add("Net Amount");     
+
+			int columnSize = headerInfo.size();
+			
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			XSSFSheet sheet = workbook.createSheet("NonLTPortfolioTrades");			
+
+			//Create Header Row
+			Row row = sheet.createRow(0);
+			int columnCount = 0;		
+			for(String headerElement: headerInfo){
+				Cell cell = row.createCell(columnCount);
+				cell.setCellValue(headerElement);
+				columnCount++;
+			}			
+			//Create Content Rows bases on ignore Records List Object
+			CellStyle netAmountCellCyle = workbook.createCellStyle();
+			netAmountCellCyle.setAlignment(CellStyle.ALIGN_RIGHT);
+			
+			int rowCount = 1;
+			for(NonLTPortfolioTradeSummary nonLTPortfolioTrade: nonLTPortfolioReportList){
+
+				Row row2 = sheet.createRow(rowCount);
+				//Reset Column count for actual data
+				for(int i=0; i<columnSize;i++){
+					if(i==0){
+						Cell cell = row2.createCell(i);
+						cell.setCellValue(nonLTPortfolioTrade.getPortfolioFundNumber());
+					}else if(i==1){
+						Cell cell = row2.createCell(i);
+						cell.setCellValue(nonLTPortfolioTrade.getPortfolioFundName());
+					}else if(i==2){
+						Cell cell = row2.createCell(i);
+						cell.setCellValue(nonLTPortfolioTrade.getPortfolioFundGroup());
+					}else{
+						Cell cell = row2.createCell(i);
+						cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+						cell.setCellValue(nonLTPortfolioTrade.getNetAmount().doubleValue());
+						cell.setCellStyle(netAmountCellCyle);
+					}
+				}
+
+
+				rowCount++;
+
+			}
+			
+			LogFactory.getLog().logReport(methodName, "Non LT Portfolio Trades Summary Total Record Count:"+rowCount);
+
+			//Write File to Unix Server
+			
+			Properties nonLTFeedConfigProperties = aLTQTBatchUtil.getDyanamicProperties(LTQTBatchUtil.NON_LT_FEED_CONFIG_PROP_FILE);		
+
+			String nonLTDestinationShareDrivePath = nonLTFeedConfigProperties.getProperty("NON_LT_FIDO_OUTPUT_FILE_SHARE_DRIVE_PATH");
+			String nonLTDestinationFileBaseName = nonLTFeedConfigProperties.getProperty("NON_LT_FIDO_OUTPUT_FILE_NAME");
+			String nonLTDestinationFileName = nonLTDestinationFileBaseName+"_"+timestamp+fileExtension;
+
+			String sourceFileServerPath = nonLTFeedConfigProperties.getProperty("BATCH_FIDO_CONFIG_BASE_PATH")+nonLTDestinationFileName;
+			// Local file path	"C:/projects/FAS_NonLT/Output/FAS_NonLTData.xlsx"
+			
+			LogFactory.getLog().logReport(methodName, "Non LT Portfolio Trades Summary Server Path:"+sourceFileServerPath);
+			FileOutputStream outputStream = new FileOutputStream(sourceFileServerPath);
+			workbook.write(outputStream);
+			workbook.close();
+			
+			LogFactory.getLog().logReport(methodName, "Writing Non LT Portfolio Summary Trade Feed to Unix path is completed.");
+			//FTP from Unix Server to FTP Server
+			
+			FTPClient ftpClientForOutputFile =aFTPClientUtil.getFTPClient();
+
+			boolean isFileFTPed = aFTPClientUtil.copyFileFromServerToFTPShareDrive(nonLTDestinationShareDrivePath, nonLTDestinationFileName, sourceFileServerPath, ftpClientForOutputFile);
+
+			aFTPClientUtil.closeFTPClient(ftpClientForOutputFile);
+			LogFactory.getLog().logReport(methodName, "Non LT Portfolio Summary Trade Feed is placed in FTP share drive path. FTP to ShareDrive Status="+isFileFTPed);
+			
+			
+		} catch (Exception e) {
+			isSuccess = false;
+			LogFactory.getLog().logError(methodName, "Failed to Create/Write final summary output file. Exception Details="+e, LTQTBatchConstants.NON_LT_FEED_JOB_RUN_ERROR_CODE);
+		}
+		
+		return isSuccess;
+	}
+
+
+
+}
