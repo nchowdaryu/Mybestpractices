@@ -1,0 +1,84 @@
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Date;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
+import com.company.service.application.ltqtnotification.messaging.DateFormatAdapter;
+
+
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "", propOrder = { "notificationStatus", "notificationSubStatus",
+    "notificationLastUpdtTS", "notificationlastUpdtUserId",
+    "fundNo", "notificationTrdDt", "notificationProcessDt", "moneyMovementDt",
+    "transactionDetails",
+    "clientInfo",
+    "falgsInfo"
+})
+@XmlRootElement(name = "icap:notification")
+public class ICAPSNotificationMessage {
+	//Message Attribute IDs.
+	
+	@XmlAttribute(name = "notification-id", required = true)
+	private BigInteger notificationId;
+	
+	@XmlAttribute(name = "version", required = true)
+	private BigDecimal version = new BigDecimal("1.0");
+	
+	@XmlAttribute(name = "sequence-id", required = true)
+	private BigInteger sequenceId = BigInteger.ONE;
+	
+	@XmlAttribute(name = "xmlns:xsi", required = true)
+	private String schemaInstance = "http://www.w3.org/2001/XMLSchema-instance";
+	
+	@XmlAttribute(name = "xmlns:icap", required = true)
+	private String icapSchemaNameSpace = "http://icap.vanguard.com/icap";
+	
+	@XmlAttribute(name = "xsi:schemaLocation", required = true)
+	private String schemaLoc = "http://icap.vanguard.com/icap icap-large-transaction-notification.xsd";
+	//Message elements.	
+
+	@XmlElement(name = "notification-status", required = true)
+	private String notificationStatus;
+	
+	@XmlElement(name = "notification-substatus")	
+	private String notificationSubStatus;	
+	
+	@XmlElement(name = "notification-update-ts") // YYYY-MM-DDThh:mm:ss
+	private Date notificationLastUpdtTS;	
+	
+	@XmlElement(name = "notification-update-user-id", required = true)
+	private String notificationlastUpdtUserId;
+	
+	@XmlElement(name = "fund-number", required = true)
+	private String fundNo;
+	
+	@XmlElement(name = "trade-date", required = true)  //YYYY-MM-DD
+	@XmlJavaTypeAdapter(DateFormatAdapter.class)
+	private Date notificationTrdDt;
+	
+	@XmlElement(name = "process-date", required = true)
+	@XmlJavaTypeAdapter(DateFormatAdapter.class)
+	private Date notificationProcessDt;
+	
+	@XmlElement(name = "money-movement-date")
+	@XmlJavaTypeAdapter(DateFormatAdapter.class)
+	private Date moneyMovementDt;
+	
+	@XmlElement(name = "icap:transaction", required = true)
+	private ICAPSNotificationTransactionDetails transactionDetails;
+	
+	@XmlElement(name = "icap:client-info", required = true)
+	private ICAPSNotificationClientInfo clientInfo;
+	
+	@XmlElement(name = "icap:notification-flags", required = true)
+	private ICAPSNotificationFlagInfo falgsInfo;
+	
+	//Getters and Setters.
+	
