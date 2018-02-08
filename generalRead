@@ -63,3 +63,64 @@
                     </execution>
                 </executions>
             </plugin> 
+	    
+	    
+	    
+-----Rest security on server side---
+	    <?xml version="1.0" encoding="UTF-8" ?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd 
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--create-session="stateless" should be used carefully.
+      By using stateless mode, user's state/authorizations are not cached.
+      they are retrieved every time from the database and could hava performance impact    
+      <http create-session="stateless" entry-point-ref="entryPoint">
+     -->
+    <!-- use security=none for URIs that are public --> 
+    
+       
+	<http auto-config="true" use-expressions="true">
+		<intercept-url pattern="/rest/**" access="isAuthenticated()" />
+		<access-denied-handler ref="accessDeniedHandler"></access-denied-handler>
+		<session-management session-fixation-protection="none"></session-management>
+		<custom-filter ref="siteminderFilter" position="PRE_AUTH_FILTER" />
+		
+	</http>
+
+</beans:beans>
+
+----------------web.xml--------------
+<servlet-mapping id="ServletMapping_1">
+        <servlet-name>Jersey Web Application</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>
+    
+   <servlet id="Servlet_1">
+        <servlet-name>Jersey Web Application</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>jersey.config.server.provider.packages</param-name>
+			<param-value>com.vanguard.retail.rest</param-value>
+		</init-param>
+		<init-param>
+			<param-name>jersey.config.server.provider.classnames</param-name>
+			<param-value>
+			    com.vanguard.jaxrs.feature.POIDUriOverrideFeature,
+			    com.vanguard.jaxrs.feature.CsrfPreventionFeature,
+			    com.vanguard.jaxrs.feature.JsonVulnerabilityProtectionFeature,
+                org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature,
+                org.glassfish.jersey.media.multipart.MultiPartFeature
+			</param-value>
+		</init-param>
+		<init-param>
+			<param-name>jersey.config.server.mediaTypeMappings</param-name>
+			<param-value>xml:application/xml, json:application/json</param-value>
+		</init-param>
+		<init-param>
+            <param-name>jersey.config.beanValidation.enableOutputValidationErrorEntity.server</param-name>
+            <param-value>true</param-value>
+        </init-param>
+		<load-on-startup>1</load-on-startup>
+    </servlet>
