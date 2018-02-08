@@ -1,0 +1,136 @@
+import java.io.InputStream;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.company.retail.ltqtbatch.common.utils.FTPClientUtil;
+import com.company.retail.ltqtbatch.common.utils.LTQTBatchUtil;
+import com.company.retail.ltqtbatch.constants.LTQTBatchConstants;
+import com.company.service.technical.logging.LogFactory;
+import com.company.services.batch.IBatchService;
+import com.company.services.lifecycle.IService;
+import com.company.services.lifecycle.IServiceFactory;
+@Component("NonLTFeedReportJob")
+public class NonLTFeedReportJob implements IBatchService, IService{
+
+	@Autowired
+	public FTPClientUtil aFTPClientUtil;
+
+	@Autowired
+	public LTQTBatchUtil aLTQTBatchUtil;
+	
+	@Autowired
+	public NonLTFeedReport aNonLTFeedReport;
+
+
+	@Override
+	public boolean runBatch() {
+		String methodName = "runBatch";
+		boolean batchStatus = true;
+
+		InputStream ipsLTQTSystemFundInfo =null; 
+		InputStream ipsProdFidoFile = null;
+		XSSFWorkbook xlsxwbLTQTSystemFundInfo = null;
+		XSSFWorkbook xlsxwbProdFidoFile = null;
+
+		try {
+			
+			LogFactory.getLog().logReport(methodName,"LTQTBatchUtil object:"+aLTQTBatchUtil+" && FTPClientUtil object:"+aFTPClientUtil+" && NonLTFeedReport object:"+aNonLTFeedReport);
+			
+			//Read Job Configuration Properties File from Unix Path
+			Properties nonLTFeedConfigProperties = aLTQTBatchUtil.getDyanamicProperties(LTQTBatchUtil.NON_LT_FEED_CONFIG_PROP_FILE);
+			
+			String nonLTfeedShareDrivePath = nonLTFeedConfigProperties.getProperty("NON_LT_PROD_FIDO_FILE_SHARE_DRIVE_PATH");
+			String nonLTfeedFileName = nonLTFeedConfigProperties.getProperty("NON_LT_PROD_FIDO_FILE_NAME");
+			
+			String shareDrivePathForLTQTFundInfoXLS = nonLTFeedConfigProperties.getProperty("PROD_LTQT_SYSTEM_FUNDS_INFO_REPORT_SHARE_DRIVE_PATH");
+			String fileNameForLTQTFundInfoXLS = nonLTFeedConfigProperties.getProperty("PROD_LTQT_SYSTEM_FUNDS_INFO_REPORT_FILENAME");
+			
+			LogFactory.getLog().logReport(methodName, "Non LT Feed Configuration Properties read completed:"+nonLTFeedConfigProperties);			
+			
+			//Read Input Production Fund LTQT info detail xls file from ShareDrive using FTP Client.
+			
+			FTPClient ftpClientForLTQTSystemFunds =aFTPClientUtil.getFTPClient();
+			
+			
+			ipsLTQTSystemFundInfo = aFTPClientUtil.ftpFromShareDriveandRenameFile(shareDrivePathForLTQTFundInfoXLS, fileNameForLTQTFundInfoXLS, ftpClientForLTQTSystemFunds, false, null);
+			
+			LogFactory.getLog().logReport(methodName, "System Funds Excel Workbook Input stream read completed. Input Stream object="+ipsLTQTSystemFundInfo);			
+			
+			xlsxwbLTQTSystemFundInfo = new XSSFWorkbook(ipsLTQTSystemFundInfo);
+			
+			
+			ipsLTQTSystemFundInfo.close();
+			aFTPClientUtil.closeFTPClient(ftpClientForLTQTSystemFunds);
+			
+			LogFactory.getLog().logReport(methodName, "Input Production Fund LTQT info detail xls file from ShareDrive using FTP Client read is completed.");			
+			
+			//Generate Fund Info Map
+			Map<String,LTQTFundsInfo> ltqtSystemFundsInfoMap = aLTQTBatchUtil.setAndGetLTQTFundsInfoMap(xlsxwbLTQTSystemFundInfo, "LTQTSystemFundsInfo");
+			
+					
+			//Read Input Production Fidelity File from ShareDrive using FTP Client
+			
+			FTPClient ftpClientForProdFile =aFTPClientUtil.getFTPClient();
+			
+			String currentDateTS = aLTQTBatchUtil.getCurrentDate(LTQTBatchUtil.NON_LT_FEED_IP_FILE_RENAME_FORMAT);
+			
+			LogFactory.getLog().logReport(methodName, "Generated Time Stamp:"+currentDateTS);			
+			
+			ipsProdFidoFile = aFTPClientUtil.ftpFromShareDriveandRenameFile(nonLTfeedShareDrivePath, nonLTfeedFileName, ftpClientForProdFile, true, currentDateTS);
+			xlsxwbProdFidoFile = new XSSFWorkbook(ipsProdFidoFile);			
+			
+			ipsProdFidoFile.close();
+			aFTPClientUtil.closeFTPClient(ftpClientForProdFile);
+			LogFactory.getLog().logReport("runBatch", "Input Production Fidelity File from ShareDrive using FTP Client Read is completed.");			
+			
+			
+			//Generate Non-LT Ignore Report from Input File Current Day Summary Sheet.	
+			aNonLTFeedReport.generateCurrentDayNonLTReport(xlsxwbProdFidoFile, ltqtSystemFundsInfoMap, currentDateTS);
+			
+			
+		} catch (Exception e) {
+			LogFactory.getLog().logError(methodName,"Exception while running the batch. Exception details="+e,LTQTBatchConstants.NON_LT_FEED_JOB_RUN_ERROR_CODE);
+			batchStatus = false;
+		}
+
+		
+
+		return batchStatus;
+	}
+
+	
+
+	@Override
+	public void setOriginatingFactory(IServiceFactory anOriginatingFactory) {
+		//Not using this method.
+
+	}
+
+	@Override
+	public void remove() {
+		//Not using this method.	
+	}
+
+	@Override
+	public int getPercentComplete() {
+
+		return 0;
+	}	
+
+
+	@Override
+	public void setAttributes(Hashtable arg0) {
+		//Not using this method.
+	}
+
+	@Override
+	public void setPercentComplete(int arg0) {
+		//Not using this method.	
+	}
+}
