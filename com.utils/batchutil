@@ -1,0 +1,111 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Component;
+
+import com.company.retail.ltqtbatch.constants.LTQTBatchConstants;
+import com.company.retail.ltqtbatch.nonltfeed.LTQTFundsInfo;
+import com.company.service.technical.logging.LogFactory;
+import com.company.spring.core.config.support.PropertyLocator;
+
+@Component
+public class LTQTBatchUtil {
+	
+	public static final String NON_LT_FEED_CONFIG_PROP_FILE = "NON_LT_FEED_CONFIG_PROP_FILE";
+	public static final String NON_LT_FEED_IP_FILE_RENAME_FORMAT= "yyyyMMdd_HHmmss";
+	protected static Map<String,LTQTFundsInfo> ltqtSystemFundsInfoMap = new HashMap<String,LTQTFundsInfo>();
+
+
+	public Properties getDyanamicProperties(String pathConfigProperty){		
+		
+		String methodName = "getDyanamicProperties";
+		Properties prop =null;
+		try{
+			
+			String configPropertyFilePath = PropertyLocator.getStringProperty("largequalifiednotification-batch", pathConfigProperty);
+			// "C:/projects/FAS_NonLT/NonLTFeedConfiguration.properties"  - for local testing only
+			
+			prop = new Properties();
+			File proertyFile = new File(configPropertyFilePath);				
+			InputStream input = new FileInputStream(proertyFile);				
+			prop.load(input);
+			input.close();
+				
+			
+		}catch(Exception e){
+			prop = null;
+			LogFactory.getLog().logError(methodName,"Exception while reading properties for configuaration path: "+pathConfigProperty+" and Exception details="+e,LTQTBatchConstants.PROPERTIES_FILE_READ_ERROR_CODE);
+		}
+
+
+		return prop;
+	}
+	
+	public String getCurrentDate(String format){
+		Date date = new Date(System.currentTimeMillis());
+		SimpleDateFormat sfd = new SimpleDateFormat(format);
+		return sfd.format(date);
+	}
+	
+	public Map<String,LTQTFundsInfo> setAndGetLTQTFundsInfoMap(XSSFWorkbook wb, String sheetName){
+		XSSFSheet sheet = wb.getSheet(sheetName);
+		XSSFRow row;		
+		Iterator<Row> fundDetailsRows = sheet.iterator();		
+
+		while (fundDetailsRows.hasNext()) {
+
+			row = (XSSFRow) fundDetailsRows.next();
+			LTQTFundsInfo fundInfo = new LTQTFundsInfo();			
+			if(row.getRowNum() != 0){ //Skip Header
+				row.getCell(0).setCellType(XSSFCell.CELL_TYPE_STRING);
+				String fundNumber = addLeadingZerosToFund(row.getCell(0).getStringCellValue().trim());
+				fundInfo.setFundNumber(fundNumber);	
+
+				row.getCell(1).setCellType(XSSFCell.CELL_TYPE_STRING);
+				fundInfo.setPortfolioFundNumber(addLeadingZerosToFund(row.getCell(1).getStringCellValue().trim()));
+
+				row.getCell(2).setCellType(XSSFCell.CELL_TYPE_STRING);
+				fundInfo.setFundGroup(row.getCell(2).getStringCellValue().trim());
+
+				row.getCell(5).setCellType(XSSFCell.CELL_TYPE_STRING);
+				fundInfo.setFundName(row.getCell(5).getStringCellValue().trim());
+
+				//lower limit
+				row.getCell(9).setCellType(XSSFCell.CELL_TYPE_STRING);
+				fundInfo.setLtLimit(new BigDecimal(row.getCell(9).getStringCellValue().trim()));
+
+				//higher limit
+				row.getCell(10).setCellType(XSSFCell.CELL_TYPE_STRING);
+				fundInfo.setQtLimit(new BigDecimal(row.getCell(10).getStringCellValue().trim()));
+
+				ltqtSystemFundsInfoMap.put(fundNumber, fundInfo);
+
+			}			
+
+		}
+
+		return ltqtSystemFundsInfoMap;	
+
+	}
+	
+	public String addLeadingZerosToFund(String fundNumber) {
+		
+			return  StringUtils.leftPad(fundNumber,4,"0");		// Fund number maximum length is 4 digits.
+	}
+
+
+}
