@@ -17,7 +17,10 @@ import javax.mail.internet.MimeMultipart;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.mail.javamail.JavaMailSender;
 
-//configure SMTP server 
+//configure SMTP server in spring config file.
+<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="$application-project-{SMTP_SERVER}"/>
+    </bean>
 public class EmailServiceUtil {
 	
 	static final String FROM = "test@test.com";
