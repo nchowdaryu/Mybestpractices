@@ -1,0 +1,80 @@
+import java.io.StringWriter;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import com.comapny.process.util.Misc;
+import com.comapny.service.application.ltqtnotification.messaging.pojo.ICAPSNotificationMessage;
+import com.comapny.service.businessprocess.rules.ltqtnotification.util.LTQTNotificationApplicationErrorCode;
+import com.comapny.service.businessprocess.rules.ltqtnotification.util.LTQTNotificationApplicationErrorMessage;
+import com.comapny.service.technical.common.ServiceException;
+import com.comapny.service.technical.common.Tools;
+import com.comapny.service.technical.logging.LogFactory;
+import com.comapny.service.technical.mqs.AsyncSender;
+import com.comapny.service.technical.mqs.Message;
+import com.comapny.service.technical.mqs.MessageImpl;
+import com.comapny.service.technical.mqs.MessageType;
+@Component("NautilusToICAPSMessageSender")
+public class NautilusToICAPSMessageSender {
+	
+	@Autowired
+	@Qualifier("nautilus-to-icap-sender")
+	AsyncSender asyncJmsSender;
+	
+	/**
+	 * Marshal the java message object to XML format & Puts XML message in ICAP Request Queue
+	 * @param aNotificationMessage
+	 */
+	public boolean sendMsgToICAPS(ICAPSNotificationMessage aNotificationMessage){
+		final String METHOD_NAME = "sendMsgToICAPS";
+		boolean isMessageSendSuccessful = false;
+		Message message = new MessageImpl(MessageType.VENDOR_TEXT);
+		try{
+			String qPutMessage = marshallNotification(aNotificationMessage);
+			
+			message.setPayload(qPutMessage);
+			message.setCorrelationId(aNotificationMessage.getNotificationId()+":"+System.currentTimeMillis());
+			
+			String correlationId = asyncJmsSender.send(message);
+			
+			if (Misc.isNotNullAndEmpty(correlationId)) {
+				isMessageSendSuccessful = true;
+				LogFactory.getLog().logReport(METHOD_NAME, "Message Successfully sent to Nautilus ICAPS input Queue for Notification_ID: "+aNotificationMessage.getNotificationId()+" and correlationId is "+correlationId,0);
+			} else {
+				LogFactory.getLog().logError(METHOD_NAME, LTQTNotificationApplicationErrorMessage.LTQT_ICAPS_MESSAGE_SEND_FAILED+" For Notification_ID: "+aNotificationMessage.getNotificationId(),LTQTNotificationApplicationErrorCode.LTQT_ICAPS_MESSAGE_SEND_FAILED.getCode());
+			}
+			
+		}catch(ServiceException e){
+			LogFactory.getLog().logError(METHOD_NAME, LTQTNotificationApplicationErrorMessage.LTQT_ICAPS_MESSAGE_MARSHALLING_FAILED+" For Notification_ID: "+aNotificationMessage.getNotificationId()+" and Exception details="+e,LTQTNotificationApplicationErrorCode.LTQT_ICAPS_MESSAGE_MARSHALLING_FAILED.getCode());
+
+		}
+		return isMessageSendSuccessful;
+
+	}
+	
+  /**
+  * JAXB Marshalling - Java to XML conversion
+  **/
+	public String  marshallNotification(ICAPSNotificationMessage aNotificationMessage) throws ServiceException{
+		final String METHOD_NAME = " marshallNotification(.) ";
+		StringWriter writer=new StringWriter();
+		
+		JAXBContext jaxbContext;
+		try {
+			jaxbContext = JAXBContext.newInstance(ICAPSNotificationMessage.class);
+			Marshaller marshaller=jaxbContext.createMarshaller();
+			marshaller.marshal(aNotificationMessage, writer);
+		} catch (JAXBException e) {			
+			throw new ServiceException(e, METHOD_NAME, "JAXBException while marshalling NotificationMessage to XML", "for Notification ID:"+aNotificationMessage.getNotificationId(), Tools.stackTraceToString(e), 1);
+		}			
+		
+		return writer.toString();
+		
+	}
+
+}
