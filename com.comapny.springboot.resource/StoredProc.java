@@ -20,6 +20,38 @@ import com.company.spring.storedproc.SqlParameterModes;
 import com.company.spring.storedproc.StoredProcHeader;
 import com.company.spring.storedproc.annotations.StoredProcedure;
 
+/**
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.springframework.stereotype.Component;
+
+/**
+ * Indicates that the annotated class is a <i>stored procedure</i>.
+ * <p />
+ * This annotation also serves as a specialization of {@link Component @Component}, allowing for implementation classes to be autodetected through
+ * classpath scanning.
+ * <p />
+ * For more information about stereotype annotations used in classpath scanning, see:
+ * http://static.springframework.org/spring/docs/2.5.x/reference/beans.html#beans-stereotype-annotations
+ */
+@Target( { ElementType.TYPE })
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Component
+public @interface StoredProcedure {
+
+    /**
+     * The value may indicate a suggestion for a logical component name, to be turned into a Spring bean in case of an autodetected component.
+     * 
+     * @return the suggested component name, if any
+     */
+    String value() default "";
+}
+**/
 @StoredProcedure
 public class RetreiveAllLiteratureStoredProcedure extends RetailAbstractStoredProcedure{	
 	
