@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop" xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <bean id="clientCacheFactory" class="com.vanguard.spring.caching.support.EhcacheFactoryImpl">
+    	<property name="cacheManager" ref="caching-provider-cacheManager" />
+        <property name="blocking" value="$caching-provider-{CLIENT_CACHE_BLOCKING}" />
+        <property name="diskPersistent" value="$caching-provider-{CLIENT_CACHE_DISK_PERSISTENT}" />
+        <property name="eternal" value="$caching-provider-{CLIENT_CACHE_ETERNAL}" />
+        <property name="maxElementsInMemory" value="$caching-provider-{CLIENT_CACHE_MAX_ELEMENTS_IN_MEMORY}" />
+        <property name="maxElementsOnDisk" value="$caching-provider-{CLIENT_CACHE_MAX_ELEMENTS_ON_DISK}" />
+        <property name="memoryStoreEvictionPolicyFromObject">
+            <util:constant static-field="$caching-provider-{CLIENT_CACHE_MEMORY_EVICTION_POLICY}" />
+        </property>
+        <property name="overflowToDisk" value="$caching-provider-{CLIENT_CACHE_OVERFLOW_TO_DISK}" />
+        <property name="timeToIdle" value="$caching-provider-{CLIENT_CACHE_TIME_TO_IDLE}" />
+		<property name="timeToLive" value="$caching-provider-{CLIENT_CACHE_TIME_TO_LIVE}" />
+    </bean>
+
+    <bean id="clientSessionConfiguration" class="com.vanguard.spring.caching.support.DynamicCacheConfiguration">
+        <constructor-arg ref="clientCacheFactory" />
+        <constructor-arg ref="$caching-provider-{CLIENT_CACHE_NAME_GENERATOR_POLICY}" />
+        <constructor-arg ref="pointcutParametersCacheEntryKeyGenerationPolicy" />
+    </bean>
+</beans>
