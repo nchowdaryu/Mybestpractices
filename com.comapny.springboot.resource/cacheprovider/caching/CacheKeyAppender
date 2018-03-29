@@ -1,0 +1,15 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+
+public interface CacheKeyAppender {
+    
+    /**
+     * This is the entry point for the composite pattern to generate Cache keys.  Depending
+     * on the configuration of a particular cache, various implementations of cache keys will
+     * be used to create the appropriate key.
+     * 
+     * @param pjp
+     * @return
+     */
+    String generateCacheKeyFromJoinPoint(ProceedingJoinPoint pjp);
+
+}
