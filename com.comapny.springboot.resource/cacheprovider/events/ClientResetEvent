@@ -1,0 +1,20 @@
+import org.springframework.context.ApplicationEvent;
+
+/**
+ *  Typically in internal applications such as WAVE, would publish ClientResetEvent 
+ *  up on retrieving a new client there by triggering invalidation of all Client scoped caches
+ */
+public class ClientResetEvent extends ApplicationEvent {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 7419824388010262095L;
+
+    /**
+     * @param source
+     */
+    public ClientResetEvent(Object source) {
+        super(source);
+    }
+}
