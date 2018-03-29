@@ -1,0 +1,59 @@
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.springframework.util.Assert;
+
+import com.vanguard.spring.caching.CacheKeyAppender;
+
+public class CacheKeyAppenderBuilder {
+    
+    private List<AbstractAppender> appenders;
+    
+    public CacheKeyAppenderBuilder() {
+        super();
+        appenders = new ArrayList<AbstractAppender>();
+    }
+    
+    public CacheKeyAppender build() {
+        Assert.notEmpty(appenders, "Must have at least one CacheKeyAppender");
+        
+        Iterator<AbstractAppender> it = appenders.iterator();
+        
+        AbstractAppender result = it.next();
+        AbstractAppender appender = result;
+        
+        while (it.hasNext()) {
+            AbstractAppender next = it.next();
+            appender.nextAppender(next);
+            appender = next;
+        }
+        
+        return result;
+        
+    }
+
+    public CacheKeyAppenderBuilder className() {
+        appenders.add(new TargetClassNameAppender());
+        return this;
+    }
+
+    public CacheKeyAppenderBuilder methodName() {
+        appenders.add(new MethodNameAppender());
+        return this;
+    }
+
+    public CacheKeyAppenderBuilder methodArguments() {
+        appenders.add(new MethodArgumentsAppender());
+        return this;
+    }
+
+    public CacheKeyAppenderBuilder stringValue(String string) {
+        appenders.add(new StringAppender(string));
+        return this;
+    }
+    
+    
+    
+    
+}
