@@ -1,0 +1,178 @@
+import java.lang.reflect.Type;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache.ValueWrapper;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.Constants;
+import com.company.spring.caching.EnhancedCache;
+import com.company.spring.caching.EnhancedCacheManager;
+import com.company.spring.caching.annotations.Cacheable;
+import com.company.spring.caching.support.BlockingCacheDeadlockDetector;
+import com.company.spring.caching.util.CacheEntryKeyGenerationUtils;
+
+/**
+ * @author uiak
+ * 
+ */
+@Aspect
+@Component("cachePopulatorAspect")
+@Order
+public class CacheEntryCreatorAspect extends AbstractCachingInterceptor {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(CacheEntryCreatorAspect.class);
+    
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    
+    @Autowired
+    BlockingCacheDeadlockDetector blockingCacheDeadlockDetector;
+
+    /**
+     * @param anCacheManager
+     * @param anPointcutMethodArgumentsCacheEntryKeyGeneratorPolicy
+     */
+    @Autowired
+    CacheEntryCreatorAspect(
+            @Qualifier("cacheManager") EnhancedCacheManager cacheManager,
+            @Qualifier("pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy") CacheEntryKeyGenerationPolicy pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy) {
+        super(cacheManager, pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy);
+    }
+
+    @Pointcut("@annotation(cacheable)")
+    public void cacheablePointCut(Cacheable cacheable) {
+    }
+
+    /**
+     * main method caches method result if method is configured for caching method results must be serializable
+     * 
+     * @throws Throwable
+     * 
+     * @throws Throwable
+     */
+    @Around(value = "cacheablePointCut(cacheable)", argNames = "cacheable")
+    public Object interceptForCaching(ProceedingJoinPoint pjp, Cacheable cacheable) throws Throwable { 
+
+        /* TODO uvjl: begin block of code that needs extraction to umbrella global key generation. */
+        String cachingConfigurationName = cacheable.cache();
+        String overridecacheentrykey = cacheable.key();
+        String cacheentrykeyprefix = cacheable.keyprefix();
+        String keygroupid = cacheable.keysgroupid();
+        boolean isCacheNullValue = cacheable.cacheNullValue();
+
+        String generatedCacheKey = CacheEntryKeyGenerationUtils.generateCacheKey(cachingConfigurationName, cacheentrykeyprefix,
+                overridecacheentrykey, pjp, pointcutMethodArgumentsOnlyCacheEntryKeyGeneratorPolicy);
+
+        if (StringUtils.hasText(keygroupid) && !keygroupid.equals(Constants.DEFAULT_KEYS_GROUP_ID)) {
+            generatedCacheKey = CacheEntryKeyGenerationUtils.applyKeyGroupId(keygroupid, generatedCacheKey);
+        }
+        /* uvjl: end block of code for umbrella key gen */
+
+        return doCacheInterception(pjp, cacheManager.getCache(cachingConfigurationName), generatedCacheKey, isCacheNullValue);
+    }
+
+    /*
+     * TODO need to cleanup the multiple cache code: should only have one cache object in the future.
+     */
+    private Object doCacheInterception(ProceedingJoinPoint pjp, EnhancedCache cache, String cacheKey, boolean isCacheNullValue) throws Throwable {
+        try {
+        	LOGGER.info("Applying caching aspect on {} for cache {} and key {}", pjp.toLongString(), cache.getName(), cacheKey);
+            checkForBlockingCacheDeadlock(cache);
+
+            if (isVoidReturnType(pjp)) {
+            	LOGGER.info("{} returns void, so no object will be cached.", pjp.getSignature().getName());
+                return pjp.proceed();
+            }
+
+            lock.readLock().lock();
+            ValueWrapper value = cache.get(cacheKey);
+            lock.readLock().unlock();
+
+            if (value == null) {
+                return handleMissingEntry(pjp, cache, cacheKey, isCacheNullValue);
+            }
+            
+            LOGGER.info("Cache element for key {} is successfully returned from cache {}", cacheKey, cache.getName());            
+            return value.get();
+        } finally {
+            blockingCacheDeadlockDetector.clearCacheNameInThreadLocalStore(cache);
+        }
+    }
+
+    private Object handleMissingEntry(ProceedingJoinPoint pjp, EnhancedCache cache, String cacheKey, boolean isCacheNullValue) throws Throwable {
+        // Entry not found in cache.
+    	LOGGER.info("Cache entry is missing for key {} in cache {}, calling into target method.", cacheKey, cache.getName());
+        
+        // call target/sub-intercepter
+        Object result = null;
+        try {
+            if (cache.isBlocking()) {
+                lock.writeLock().lock();
+                ValueWrapper value = cache.get(cacheKey);
+                
+                if (value != null) {
+                    return value.get();
+                }
+            }
+            
+            result = pjp.proceed();
+            
+            cache.validateObjectForCache(result);
+            
+            //allow setting cacheNullValue=false on annotation so that null value will not be cached
+            //retail wants to use null as evidence that processing is still occurring on background threads
+            if( !(result == null && isCacheNullValue == false)) {
+                cache.put(cacheKey, result);
+                LOGGER.trace("Cache successfully popoulated for key {}", cacheKey);
+            }
+            return result;
+        } catch (Throwable ex) {
+        	LOGGER.info("Target {} threw exception or result is not serializable, populating cache with null to release lock.", pjp.toLongString());
+        	cache.put(cacheKey, null);
+        	
+            throw ex;
+        } finally {
+            if (lock.writeLock().isHeldByCurrentThread()) {
+                lock.writeLock().unlock();
+            }
+        }
+    }
+
+    /*
+        Blocking cache allows concurrent read access to elements already in the cache. If the element is null, other reads will block until an element with the same key is put into the cache.
+        With nested caching, deadlocks would occur when key1 and key2 both resolve to the same lock XYZ.
+        XYZ.
+            @cache
+            outerMethod(key1) -> acquires lock XYZ
+            {
+                innerMethod(key2)
+            }
+   
+            @cache
+            innerMethod(key2) -> tries to acquire the same lock XYZ and blocks
+            {
+   
+            }
+     */
+    private void checkForBlockingCacheDeadlock(EnhancedCache cache) {
+        if (blockingCacheDeadlockDetector.isNestedBlockingCache(cache)) {
+            throw new IllegalArgumentException("Nested caching calls accessing the same blocking cache " + cache.getName() + " are not allowed to avoid deadlocks. Please remove nested caching calls. For more information, please visit http://crewhub.vanguard.com/it/vpedia/Wiki%20Pages/Caching%20Provider%20FAQ.aspx#toclink4");
+        }
+    }
+
+    private boolean isVoidReturnType(ProceedingJoinPoint pjp) {
+        Type returnType = ((MethodSignature) pjp.getSignature()).getMethod().getGenericReturnType();
+        return returnType.equals(void.class);
+    }
+}
