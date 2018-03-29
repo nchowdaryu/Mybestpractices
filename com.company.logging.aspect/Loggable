@@ -1,0 +1,209 @@
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.company.logging.api.message.ErrorCodeConstants;
+
+/**
+ * Marks a public method as one that should be logged using the Spring AOP logging aspect.  
+ * Must be a public method exposed through an interface so it can be intercepted by Spring AOP.
+ * 
+ * @author u16t
+ */
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+public @interface Loggable {
+
+    /**
+     * Indicates when the LogAspect should log messages.  
+     * The default is to log at both method entry and exit, regardless of whether it exits normally.
+     */
+    LogExecution[] execution() default { LogExecution.BEFORE, LogExecution.AFTER_RETURNING, LogExecution.AFTER_THROWING };
+    
+    /**
+     * Indicates what log level should be used during "normal" method execution (i.e. no exception thrown).
+     */
+    LogLevel normalLevel() default LogLevel.TRACE;
+    
+    /**
+     * Indicates what log level should be used during when logging an exception that was thrown from the method.
+     */
+    LogLevel exceptionLevel() default LogLevel.ERROR;  
+
+    /**
+     * If populated, indicates what log code should be used on method entry and normal exit from the method.
+     */
+    int normalCode() default ErrorCodeConstants.CODE_UNDEFINED;    
+    
+    /**
+     * If populated, indicates what log code should be used when any exception is thrown from the method.
+     */
+    int exceptionCode() default ErrorCodeConstants.CODE_UNDEFINED;
+    
+    /**
+     * The method that should be called on non-null return objects for logging.
+     * Can only be used if the return type class is public, and the specified method is public and takes no arguments.
+     */
+    String returnTypeMethodName() default StringUtils.EMPTY;
+    
+    /**
+     * The method that should be called on the exception to get the message that is logged.
+     * Can only be used if the exception class is public, and the specified method is public and takes no arguments.
+     */
+    String exceptionLogMessageMethodName() default "getMessage";
+
+    /**
+     * Indicates whether performance logging should be done (will log the marked method execution time).  
+     * Currently uses the VgRealtimePerfMonitor class in the TE bundle to log to HVLM.
+     * Please note that performance logging is automatically done for stored procedure executions done through the Stored Procedure Abstraction.
+     */
+    boolean enablePerformanceLogging() default false; 
+
+    /**
+     * The remote data source or remote system providing the data. Can also be something local like "EspressCharts". 
+     * Coordinate with your development group so everybody uses the same names for these.  
+     * Only useful if enablePerformanceLogging is true, with a default value of the empty String.
+     */
+    String performanceSystem() default StringUtils.EMPTY;
+    
+    /**
+     * The name of the logical operation on the remote system being executed.  
+     * Only useful if enablePerformanceLogging is true, with a default value of the method being executed (determined in the aspect).
+     */
+    String performanceOperation() default StringUtils.EMPTY;
+    
+    /**
+     * A non-sensitive value that can tie multiple IO Performance Events together.  If no value is explicitly provided, will use the 
+     * Authenticated User ID value from Thread Storage.  Only useful if enablePerformanceLogging is true.
+     */
+    String performanceCorrelationId() default StringUtils.EMPTY;
+}
+
+import org.apache.commons.lang.math.IntRange;
+
+/**
+ * Constants used to define common error codes used by the NGSA logging component.
+ * 
+ * @author uw8h
+ */
+public final class ErrorCodeConstants {
+
+    /**
+     * Prevent creation of instance.
+     */
+    private ErrorCodeConstants() {
+        throw new AssertionError("Illegal attempt to create com.vanguard.logging.api.message.ErrorCodeConstants");
+    }
+
+    /**
+     * Constant indicating the allowed error code ranges include 0 to max integer value.
+     * <p>
+     * <b>range:</b> 0-Integer.MAX_VALUE
+     * </p>
+     */
+    public static final IntRange ALLOWED_ERROR_CODE_RANGE = new IntRange(0, Integer.MAX_VALUE);
+
+    /**
+     * Constant indicating the range of codes used by all NGSA components including logging. This range includes the below general codes. Per Vanguard
+     * logging best practices only ERROR and above messages are required to use a unique code number.
+     * <p>
+     * <b>range:</b>2032000-2032999
+     * </p>
+     */
+    public static final IntRange NGSA_CODE_RANGE = new IntRange(2032000, 2032999);
+
+    /**
+     * Indicates that error code was not defined in the message.
+     * 
+     * <ul>
+     * <li><b>code:</b> {@value #CODE_UNDEFINED}</li>
+     * <li><b>level:</b> N/A</li>
+     * <li><b>cause:</b> N/A</li>
+     * <li><b>resolution:</b> N/A</li>
+     * </ul>
+     */
+    public static final int CODE_UNDEFINED = 0;
+
+    /**
+     * Indicates a trace log message that is not associated with an pre-defined error condition.
+     * 
+     * <ul>
+     * <li><b>code:</b> 2032000</li>
+     * <li><b>level:</b> trace</li>
+     * <li><b>cause:</b> trace log message that is not associated with an pre-defined error condition.</li>
+     * <li><b>resolution:</b> none required. The log does not indicate a problem.</li>
+     * </ul>
+     */
+    public static final int CODE_NGSA_GENERAL_TRACE = NGSA_CODE_RANGE.getMinimumInteger() + 0;
+
+    /**
+     * Indicates a debug(TE trace level) log message that is not associated with an pre-defined error condition.
+     * 
+     * <ul>
+     * <li><b>code:</b> 2032001</li>
+     * <li><b>level:</b> debug</li>
+     * <li><b>cause:</b> debug log message that is not associated with an pre-defined error condition.</li>
+     * <li><b>resolution:</b> none required. The log does not indicate a problem.</li>
+     * </ul>
+     */
+    public static final int CODE_NGSA_GENERAL_DEBUG = NGSA_CODE_RANGE.getMinimumInteger() + 1;
+
+    /**
+     * Indicates a info log message that is not associated with an pre-defined error condition.
+     * 
+     * <ul>
+     * <li><b>code:</b> 2032002</li>
+     * <li><b>level:</b> info</li>
+     * <li><b>cause:</b> info log message that is not associated with an pre-defined error condition.</li>
+     * <li><b>resolution:</b> none required. The log does not indicate a problem.</li>
+     * </ul>
+     */
+    public static final int CODE_NGSA_GENERAL_INFO = NGSA_CODE_RANGE.getMinimumInteger() + 2;
+
+    /**
+     * Indicates a warn log message that is not associated with an pre-defined error condition. Used in cases where message is generated by non
+     * Vanguard developed code.
+     * 
+     * <ul>
+     * <li><b>code:</b> 2032003</li>
+     * <li><b>level:</b> warn</li>
+     * <li><b>cause:</b> warn log message that is not associated with an pre-defined error condition.</li>
+     * <li><b>resolution:</b></li>
+     * </ul>
+     */
+    public static final int CODE_NGSA_GENERAL_WARN = NGSA_CODE_RANGE.getMinimumInteger() + 3;
+
+    /**
+     * Indicates a error log message that is not associated with an pre-defined error condition. Used in cases where message is generated by non
+     * Vanguard developed code.
+     * 
+     * <ul>
+     * <li><b>code:</b> 2032004</li>
+     * <li><b>level:</b> error</li>
+     * <li><b>cause:</b> error log message that is not associated with an pre-defined error condition.</li>
+     * <li><b>resolution:</b>see the log message for details on how to correct problem.</li>
+     * </ul>
+     */
+    public static final int CODE_NGSA_GENERAL_ERROR = NGSA_CODE_RANGE.getMinimumInteger() + 4;
+
+    /**
+     * Indicates a fatal(TE alert level) log message that is not associated with an pre-defined error condition. Used in cases where message is
+     * generated by non Vanguard developed code.
+     * 
+     * <ul>
+     * <li><b>code:</b> 2032005</li>
+     * <li><b>level:</b> fatal(TE alert)</li>
+     * <li><b>cause:</b> fatal log message that is not associated with an pre-defined error condition.</li>
+     * <li><b>resolution:</b>see the log message for details on how to correct problem.</li>
+     * </ul>
+     */
+    public static final int CODE_NGSA_GENERAL_FATAL = NGSA_CODE_RANGE.getMinimumInteger() + 5;
+
+}
