@@ -1,0 +1,362 @@
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.company.process.util.Misc;
+import com.company.service.application.entity.ltqtnotification.request.NotificationExternalSharedRequestResponse;
+import com.company.service.application.entity.ltqtnotification.request.NotificationSharedRequestResponse;
+import com.company.service.application.entity.ltqtnotification.request.SearchClientRequest;
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchConstants;
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchErrorMsgConstants;
+import com.company.service.application.ltqtnotification.external.batch.pojo.LTQTBatchDetailInfo;
+import com.company.service.application.ltqtnotification.external.batch.pojo.LTQTBatchFileInfo;
+import com.company.service.application.ltqtnotification.external.batch.pojo.NotificationDetailsRawData;
+import com.company.service.application.ltqtnotification.external.batch.service.BulkUploadMessageProcessor;
+import com.company.service.application.ltqtnotification.external.batch.service.LTQTBatchFileService;
+import com.company.service.application.ltqtnotification.external.batch.validator.ProcessingMethodValidator;
+import com.company.service.application.ltqtnotification.external.detail.mapper.NotificationExternalProcessingMethodHelper;
+import com.company.service.application.ltqtnotification.external.pojo.AlternateContactInfo;
+import com.company.service.application.ltqtnotification.external.pojo.RegisteredContactInfo;
+import com.company.service.application.ltqtnotification.external.pojo.WebUploadInfo;
+import com.company.service.application.ltqtnotification.external.searchclient.service.NotificationExternalSearchClientService;
+import com.company.service.application.ltqtnotification.external.shared.enums.LTQTApplicationCode;
+import com.company.service.application.ltqtnotification.fund.pojo.NotificationFundResponse;
+import com.company.service.application.ltqtnotification.fund.service.NotificationFundService;
+import com.company.service.application.ltqtnotification.internal.pojo.CrewMemberDetails;
+import com.company.service.application.ltqtnotification.searchclient.service.NotificationSearchClientService;
+import com.company.service.application.ltqtnotification.shared.enums.LTQTProcessingMethods;
+import com.company.service.application.ltqtnotification.shared.enums.LTQTTransactionType;
+import com.company.service.application.ltqtnotification.shared.enums.NotificationTradingChannel;
+import com.company.service.application.ltqtnotification.shared.enums.OTGSearchIndicator;
+import com.company.service.application.ltqtnotification.shared.pojo.LTQTNotificationApplicationException;
+import com.company.service.application.ltqtnotification.util.LTQTNotificationApplicationConstants;
+import com.company.service.technical.logging.LogFactory;
+
+
+@Component
+public class CSVUtil {
+	
+	@Autowired
+	NotificationFundService aNotificationFundService;
+	
+	@Autowired
+	LTQTBatchFileService aLTQTBatchFileService;
+	
+	@Autowired 
+	BulkUploadMessageProcessor bulkUploadMessageProcessor;
+	
+	@Autowired
+	NotificationSearchClientService aNotificationSearchClientService;
+	
+	@Autowired
+	NotificationExternalSearchClientService aNotificationExternalSearchClientService;
+	
+	@Autowired
+	NotificationExternalProcessingMethodHelper aNotificationExternalProcessingMethodHelper;
+	
+	@Autowired
+	ProcessingMethodValidator aProcessingMethodValidator;
+	
+	private String INTERNAL_UPLOAD = LTQTApplicationCode.INTERNAL_UPLOAD.toString();	
+	private String EXTERNAL_UPLOAD = LTQTApplicationCode.EXTERNAL_UPLOAD.toString();
+	private String FIN_INDICATOR = "FIN";
+
+
+	private static String HEADER="Transaction Type,Trade Date,DLR/SHR  Indicator,Dollar Amount,Number of shares,Fund Type Indicator,Fund Identifier,Account Type Indicator,NSCCID,Account Identifier,Underlying Client,Trading Channel ,Processing method,Long Term Investment,Comments";
+	//Account Type Indicator and Fund Type Indicator added to pad extra zero
+	private int recordNumber = 0;
+	
+	public  Map<String,List<NotificationDetailsRawData>>  parseCSVToMAP(WebUploadInfo aWebUploadInfo, LTQTBatchFileInfo batchFileInfo) throws LTQTNotificationApplicationException {
+		
+    	String methodName = "parseCSVToMAP";
+    	Map<String, List<NotificationDetailsRawData>> csvDataMap = parseRecords(aWebUploadInfo, batchFileInfo, methodName);
+    	if(recordNumber <= 1){
+    		throw new LTQTNotificationApplicationException(methodName + "Invalid file :No file Records found, Empty File error logged" , LTQTBatchErrorMsgConstants.EMPTY_FILE);
+    	}else if(recordNumber > 501){
+    		throw new LTQTNotificationApplicationException(methodName + "Invalid file :Recived More records than limit in Sigle File., File error logged" , LTQTBatchErrorMsgConstants.FILE_REC_LIMIT_EXCEED);
+    	}
+    	
+    	return csvDataMap;
+	}
+
+	private Map<String, List<NotificationDetailsRawData>> parseRecords(
+			WebUploadInfo aWebUploadInfo, LTQTBatchFileInfo batchFileInfo,
+			String methodName) throws LTQTNotificationApplicationException {
+		Scanner scanner = new Scanner(aWebUploadInfo.getFileInputStream(),"UTF-8");
+    	// starts here
+    	recordNumber = 1;    	
+    	boolean isValidHeader = false;
+    	Map<String,List<NotificationDetailsRawData>> csvDataMap = new HashMap<String, List<NotificationDetailsRawData>>();
+    	
+    	while(scanner.hasNext()){
+    		String csvLine = scanner.nextLine();
+    		if(csvLine.endsWith(",")){
+    			csvLine = csvLine.substring(0, csvLine.length()-1);
+    		}
+    		if(!isValidHeader){
+    			if(csvLine.equalsIgnoreCase(HEADER)){
+    				isValidHeader = true;
+    			}else{
+    				//throw exception
+    				throw new LTQTNotificationApplicationException(methodName + "Invalid Header" , LTQTBatchErrorMsgConstants.INVALID_HEADER);
+    			}
+    		}else{
+    			recordNumber++;
+    			insertDetailsRecord(batchFileInfo,csvLine);    			
+    			String[] recordValuesSplit =  csvLine.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+    			try{
+    				convertToMap(recordValuesSplit,csvDataMap,aWebUploadInfo,batchFileInfo);
+    			}catch(Exception e){
+    				LogFactory.getLog().logError(methodName,"Record Parse Exception in convertToMap" + e.getMessage() + " " + e, LTQTBatchErrorMsgConstants.RECORD_PARSE_EXCEPTION);
+    				bulkUploadMessageProcessor.updateRecordStatus(batchFileInfo, null,String.valueOf(LTQTBatchErrorMsgConstants.RECORD_PARSE_EXCEPTION));
+    				
+    			}    			
+    		}
+    	}
+		return csvDataMap;
+	}
+	
+	private LTQTBatchFileInfo insertDetailsRecord(LTQTBatchFileInfo batchFileInfo,String csvLine) {
+		LTQTBatchDetailInfo  detailInfo = new LTQTBatchDetailInfo();
+		detailInfo.setDetailOrderNumber(recordNumber);
+		detailInfo.setDetailData(csvLine);
+		detailInfo.setDetailStatusCode(LTQTBatchConstants.TYPE_CODE_INQUEUE);//Change the status after discussion.
+		List<LTQTBatchDetailInfo> ltqtBatchDetailInfoList = new ArrayList<LTQTBatchDetailInfo>();
+		ltqtBatchDetailInfoList.add(detailInfo);
+		batchFileInfo.setLtqtBatchDetailInfoList(ltqtBatchDetailInfoList);
+		batchFileInfo = aLTQTBatchFileService.updateBatchRecordStatus(batchFileInfo,LTQTBatchConstants.INSERT_LEVEL_DETAIL);
+		return batchFileInfo;
+	}
+
+	private  void convertToMap(String[] recordValuesSplit,Map<String, List<NotificationDetailsRawData>> csvDataMap, WebUploadInfo aWebUploadInfo, LTQTBatchFileInfo batchFileInfo) throws ParseException {
+
+		
+
+		NotificationDetailsRawData bulkUploadRawData = new NotificationDetailsRawData();
+		
+		bulkUploadRawData.setBatchDetailId(batchFileInfo.getLtqtBatchDetailInfoList().get(0).getBatchDetailId());
+		bulkUploadRawData.setTransactionType(recordValuesSplit[0].replace("\"", "").trim());
+		// set trade date
+		setTradeDate(recordValuesSplit, bulkUploadRawData);
+		
+		bulkUploadRawData.setTradeAmountIndicator(recordValuesSplit[2].replace("\"", "").trim());
+		bulkUploadRawData.setDollarAmount(recordValuesSplit[3].replace("\"", "").trim());
+		bulkUploadRawData.setNumberOfShares(recordValuesSplit[4].replace("\"", "").trim());
+
+		// this is for Fund < 4 in length update the fund with  0 to match 4 digit fund number
+		setFundNoWithPrefixZero(recordValuesSplit, bulkUploadRawData);
+		//Added 0 padding for NSCC ID
+		bulkUploadRawData.setNSCCID(StringUtils.leftPad(recordValuesSplit[8].replace("\"", "").trim(),4,"0"));
+		bulkUploadRawData.setAccountTypeIndicator(recordValuesSplit[7].replace("\"", "").trim());
+		if(recordValuesSplit[7].replace("\"", "").trim().equalsIgnoreCase("VGI")){
+			String accountNo = StringUtils.leftPad(recordValuesSplit[9].replace("\"", "").trim(),11,"0");
+			bulkUploadRawData.setAccountOrFINOrMasterNo(accountNo);			
+		}else{
+			bulkUploadRawData.setAccountOrFINOrMasterNo(recordValuesSplit[9].replace("\"", "").trim());
+		}
+		AlternateContactInfo alternateContactInfo = aWebUploadInfo.getAlternateContactInfo();
+		if(null!= alternateContactInfo){
+			bulkUploadRawData.setAlternateContactName(alternateContactInfo.getAlternateName());
+			bulkUploadRawData.setAlternateContactPhoneNo(alternateContactInfo.getAlternatePhone().replace("-", "").replace("(", "").replace(") ", ""));
+			bulkUploadRawData.setAlternateContactEXT(alternateContactInfo.getAlternateExtension());
+			bulkUploadRawData.setAlternateContactEmail(alternateContactInfo.getAlternateEmail());
+		}
+		bulkUploadRawData.setUnderlyingClient(recordValuesSplit[10].replace("\"", "").trim());
+		bulkUploadRawData.setTradingChannel(recordValuesSplit[11].replace("\"", "").trim());
+		if(bulkUploadRawData.getTradingChannel().equalsIgnoreCase("Manual")){
+			bulkUploadRawData.setTradingChannel(NotificationTradingChannel.MAN.getValue());
+		}
+		
+		String processingMethod = recordValuesSplit[12].replace("\"", "").trim();
+		
+		boolean isValidProcessingMethod = aProcessingMethodValidator.isValid(bulkUploadRawData.getTradingChannel(), processingMethod);
+		
+		if(EXTERNAL_UPLOAD.equalsIgnoreCase(aWebUploadInfo.getUploadSource())) {
+			processingMethod = aNotificationExternalProcessingMethodHelper.getExternalBulkUploadProcessingMethod(processingMethod, isValidProcessingMethod);
+		}
+		
+		String transactionType = recordValuesSplit[0].replace("\"", "").trim();
+		
+		if(LTQTTransactionType.BUY.toString().equalsIgnoreCase(transactionType) || LTQTTransactionType.SELL.toString().equalsIgnoreCase(transactionType)) {
+			if(LTQTProcessingMethods.NA.toString().equalsIgnoreCase(processingMethod)) {
+				processingMethod = LTQTBatchConstants.UPLOAD_INCORRECT_PRECESSING_METHODS;
+			}
+		}
+		
+		bulkUploadRawData.setProcessingMethod(processingMethod);
+		
+		//consider blank as NO for Long term Investment for WebUpload
+		if(recordValuesSplit[13].replace("\"", "").trim().isEmpty()){
+			bulkUploadRawData.setLongTermInvestment(LTQTNotificationApplicationConstants.NO);
+		}else{
+			bulkUploadRawData.setLongTermInvestment(recordValuesSplit[13].replace("\"", "").trim());
+		}
+		
+		// when comments present
+		if(recordValuesSplit.length > 14){
+			bulkUploadRawData.setComments(recordValuesSplit[14].replace("\"", "").trim());
+		}
+		bulkUploadRawData.setRecordID(String.valueOf(recordNumber));
+		bulkUploadRawData.setRecordType("TXD");
+		bulkUploadRawData.setFileID(batchFileInfo.getBatchFileId().toString());
+		
+		//added the upload source
+		bulkUploadRawData.setUploadSource(batchFileInfo.getUploadSrc());
+		
+		//added condition to check if the upload is internal or external
+		setContactDetails(aWebUploadInfo, bulkUploadRawData);
+		
+		if(INTERNAL_UPLOAD.equalsIgnoreCase(aWebUploadInfo.getUploadSource())){
+			//add the trading firm name from the webUploadObject
+			bulkUploadRawData.setTradingFirm(aWebUploadInfo.getTradingFirms().getPoId());
+		}else if(EXTERNAL_UPLOAD.equalsIgnoreCase(aWebUploadInfo.getUploadSource())) {
+			bulkUploadRawData.setTradingFirm(batchFileInfo.getLtqtBatchClientId().toString());
+		}
+		
+		bulkUploadRawData.setPrimaryContactPoid(aWebUploadInfo.getUserPoId());
+		String key = generateKey(bulkUploadRawData);
+		List<NotificationDetailsRawData> rawDataList;
+		if(csvDataMap.containsKey(key)){
+			rawDataList = csvDataMap.get(key);
+			rawDataList.add(bulkUploadRawData);
+		}else{
+			rawDataList = new ArrayList<NotificationDetailsRawData>();
+			rawDataList.add(bulkUploadRawData);
+			csvDataMap.put(key, rawDataList);
+		}
+		
+	}
+
+	private void setFundNoWithPrefixZero(String[] recordValuesSplit,
+			NotificationDetailsRawData bulkUploadRawData) {
+		String fundIdentifier = recordValuesSplit[6].replace("\"", "").trim();
+		if(fundIdentifier.length() > 0 && fundIdentifier.length() < 4){
+			String fundNo = StringUtils.leftPad(fundIdentifier,4,"0");
+			bulkUploadRawData.setFundOrCUSIPOrTicker(fundNo);
+			
+		}else{
+			bulkUploadRawData.setFundOrCUSIPOrTicker(recordValuesSplit[6].replace("\"", "").trim());
+		}
+	}
+
+	private void setContactDetails(WebUploadInfo aWebUploadInfo,
+			NotificationDetailsRawData bulkUploadRawData) {
+		if(INTERNAL_UPLOAD.equalsIgnoreCase(aWebUploadInfo.getUploadSource())){
+			CrewMemberDetails crew = aWebUploadInfo.getCrewMemberDetails();
+			bulkUploadRawData.setPrimaryContactName(crew.getCrewName());
+			bulkUploadRawData.setCrewContactNo(crew.getInternalPhoneExtension());
+			bulkUploadRawData.setPrimaryContactEmail(crew.getCrewMail());
+			bulkUploadRawData.setDepartment(crew.getDepartment());
+			bulkUploadRawData.setDivision(crew.getDivision());
+			bulkUploadRawData.setSubDivision(crew.getSubDivision());
+			bulkUploadRawData.setOrgId(crew.getOrgId());
+			bulkUploadRawData.setPrimaryContactPhoneNo(LTQTBatchConstants.DEFAULT_PRIMARY_PHONE);
+		}else if(EXTERNAL_UPLOAD.equalsIgnoreCase(aWebUploadInfo.getUploadSource())) {
+			RegisteredContactInfo aRegisteredContactInfo = aWebUploadInfo.getRegisterdContactInfo();
+			bulkUploadRawData.setPrimaryContactName(aRegisteredContactInfo.getRegisteredName());
+			bulkUploadRawData.setPrimaryContactPhoneNo(aRegisteredContactInfo.getRegisteredPhone().replace("-", ""));
+			bulkUploadRawData.setPrimaryContactEXT(aRegisteredContactInfo.getRegisteredExtension());
+			bulkUploadRawData.setPrimaryContactEmail(aRegisteredContactInfo.getRegisteredEmail());
+		}
+	}
+
+	private void setTradeDate(String[] recordValuesSplit,
+			NotificationDetailsRawData bulkUploadRawData) {
+		String[] dateSplit = recordValuesSplit[1].replace("\"", "").trim().split("/");
+		if(dateSplit.length == 3){
+			String month  = StringUtils.leftPad(dateSplit[0],2,"0");
+			String day = StringUtils.leftPad(dateSplit[1],2,"0");
+			String year = dateSplit[2];
+			bulkUploadRawData.setTradeDate(month+"/"+day+"/"+year);
+		}
+		else{
+			bulkUploadRawData.setTradeDate(recordValuesSplit[1].replace("\"", "").trim());
+		}
+	}
+	
+
+	private  String generateKey(NotificationDetailsRawData bulkUploadRawData){
+		
+		String separator ="_";
+		String fundCusipOrTickerValue = bulkUploadRawData.getFundOrCUSIPOrTicker();
+		if(Misc.isNotNullAndEmpty(fundCusipOrTickerValue)){
+			List<NotificationFundResponse> notificationFundResponseList = (List<NotificationFundResponse>) aNotificationFundService.retrieveFundProfileList(fundCusipOrTickerValue);
+			//if list size is more than one need to add code to check and reject that cusip
+			fundCusipOrTickerValue = cusipOrTickerValue(fundCusipOrTickerValue,
+					notificationFundResponseList);
+		}
+		
+		String accountOrMaster = bulkUploadRawData.getAccountOrFINOrMasterNo();
+		
+		if(FIN_INDICATOR.equalsIgnoreCase(bulkUploadRawData.getAccountTypeIndicator())) {
+			accountOrMaster = getAccountNoFromFIN(fundCusipOrTickerValue, bulkUploadRawData.getAccountOrFINOrMasterNo(), bulkUploadRawData.getNSCCID(), bulkUploadRawData.getUploadSource(), bulkUploadRawData.getPrimaryContactPoid());
+		}
+		
+		String tradeDate = bulkUploadRawData.getTradeDate();
+		try{
+			SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+			SimpleDateFormat sdf2 = new SimpleDateFormat("MM/dd/yyyy");
+			Date formatedDate = sdf2.parse(tradeDate);
+			tradeDate = sdf1.format(formatedDate); 
+		}catch(Exception e){
+			LogFactory.getLog().logError("generateKey","Exception while parsing date in generateKey method::" + e.getMessage() + " " + e, LTQTBatchErrorMsgConstants.RECORD_PARSE_EXCEPTION);
+		}
+		String trnType = bulkUploadRawData.getTransactionType().toUpperCase();
+		
+		String key = trnType+separator+fundCusipOrTickerValue+separator+accountOrMaster+separator+tradeDate;
+		
+		return key;
+	}
+
+	private String cusipOrTickerValue(String fundCusipOrTickerValue,
+			List<NotificationFundResponse> notificationFundResponseList) {
+		if(Misc.isNotNullAndEmpty(notificationFundResponseList)){
+			
+			if(notificationFundResponseList.size() == LTQTNotificationApplicationConstants.ONE){
+				NotificationFundResponse notificationFundResponse = notificationFundResponseList.get(0);
+				if(fundCusipOrTickerValue.equalsIgnoreCase(notificationFundResponse.getTicker())){
+					fundCusipOrTickerValue =  notificationFundResponse.getFundId();
+				}else if (fundCusipOrTickerValue.equalsIgnoreCase(notificationFundResponse.getCusip())){
+					fundCusipOrTickerValue =  notificationFundResponse.getFundId();
+				}else if (fundCusipOrTickerValue.equalsIgnoreCase(notificationFundResponse.getFundId())){
+					
+					fundCusipOrTickerValue =  notificationFundResponse.getFundId();
+				}
+			}
+		}
+		return fundCusipOrTickerValue;
+	}
+
+	private String getAccountNoFromFIN(String fundCusipOrTickerValue, String accountOrFINOrMasterNo, String nsccid, String uploadSource, String userPoid) {
+		
+		SearchClientRequest aSearchClientRequest = new SearchClientRequest();
+		aSearchClientRequest.setFinBinNumber(accountOrFINOrMasterNo);
+		aSearchClientRequest.setNsccId(nsccid);
+		aSearchClientRequest.setFundNumber(fundCusipOrTickerValue);
+		aSearchClientRequest.setSearchIndicator(OTGSearchIndicator.FUND_FINBIN_NSCC_ID.toString());
+		aSearchClientRequest.setIpaFlag("N");
+		
+		if(EXTERNAL_UPLOAD.equalsIgnoreCase(uploadSource)) {
+			NotificationExternalSharedRequestResponse aNotificationExternalSharedRequestResponse = aNotificationExternalSearchClientService.retrieveExternalSearchClientData(aSearchClientRequest, userPoid);
+			if(aNotificationExternalSharedRequestResponse != null && aNotificationExternalSharedRequestResponse.getNotificationInfo() != null && aNotificationExternalSharedRequestResponse.getNotificationInfo().getAccountNumber() != null) {
+				return aNotificationExternalSharedRequestResponse.getNotificationInfo().getAccountNumber();
+			}
+		} else {
+			NotificationSharedRequestResponse aNotificationSharedRequestResponse = aNotificationSearchClientService.retrieveSearchClientData(aSearchClientRequest);
+			if(aNotificationSharedRequestResponse != null && aNotificationSharedRequestResponse.getNotificationInfo() != null && aNotificationSharedRequestResponse.getNotificationInfo().getAccountNumber() != null) {
+				return aNotificationSharedRequestResponse.getNotificationInfo().getAccountNumber();
+			} 
+		}
+		return accountOrFINOrMasterNo;
+	}
+	
+}
