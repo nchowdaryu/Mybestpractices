@@ -1,0 +1,26 @@
+public class Constants {
+
+    public static final String DEFAULT_PREFIX = "default-prefix";
+
+    public static final String DEFAULT_KEY = "default-key";
+
+    public static final String DEFAULT_KEY_GEN_METHOD_NAME = "default-key-gen-method-name";
+
+    public static final String DEFAULT_CACHING_CONFIGURATION = "no-default-configuration";
+
+    public static final String FIELD_SEPERATOR = ".";
+
+    public static final String KEYS_GROUP_SEPERATOR = "^";
+
+    public static final String DEFAULT_METHODARGS_PLACEHOLDER = "METHODARGS_PLACEHOLDER";
+
+    public static final String DEFAULT_METHODNAME_PLACEHOLDER = "METHODNAME_PLACEHOLDER";
+
+    public static final String DEFAULT_TARGET_PLACEHOLDER = "TARGETNAME_PLACEHOLDER";
+
+    public static final String DEFAULT_KEYS_GROUP_ID = "no-default-keygroup-id";
+
+    public static final String MULTI_KEYGROUPID_SPEC_DELIM = ";";
+
+    public static final String HTTPSESSION_CACHNAME_PREFIX = "HTTPSESSION_"; // Ehcache fails if cachename contains colon char.
+}
