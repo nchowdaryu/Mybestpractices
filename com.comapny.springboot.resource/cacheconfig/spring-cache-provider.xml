@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:gfe="http://www.springframework.org/schema/gemfire"
+    xmlns:cache="http://www.springframework.org/schema/cache"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+						http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+						http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+                        http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+                        http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
+
+	<bean id="caching-provider-cacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:/META-INF/caching-provider/ehcache.xml" />
+		<property name="shared" value="true" /> <!-- Changed from false with EhCache 2.5+ to avoid "net.sf.ehcache.CacheException: Another unnamed CacheManager already exists in the same VM" error and keep 2.4- semantics -->
+	</bean>
+
+	<bean id="cache-provider-cache-config" class="org.springframework.cache.ehcache.EhCacheFactoryBean" abstract="true">
+		<property name="cacheManager" ref="caching-provider-cacheManager" />
+		<!--  This blocking parameter needs to be always true -->
+		<property name="blocking" value="true" />
+		<property name="diskPersistent" value="false" />
+		<property name="eternal" value="false" />
+		<property name="maxElementsInMemory" value="100" />
+		<property name="maxElementsOnDisk" value="0" />
+		<property name="memoryStoreEvictionPolicyFromObject">
+			<util:constant static-field="net.sf.ehcache.store.MemoryStoreEvictionPolicy.LRU" />
+		</property>
+		<property name="overflowToDisk" value="false" />
+		<property name="timeToIdle" value="0" />
+		<property name="timeToLive" value="0" />
+	</bean>
+	
+	<bean id="ehCacheManager" class="com.vanguard.spring.caching.ehcache.EhCacheCacheManager" />
+	
+</beans>
