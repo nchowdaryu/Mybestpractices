@@ -1,0 +1,157 @@
+package com.vanguard.logging.api.message;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+
+/**
+ * Common utility to handle Message
+ * 
+ * @author uw8h
+ */
+public final class MessageUtils {
+
+    /**
+     * Pattern used to check if a String message is following either the <code>code=1234|msg=coded message</code> or the
+     * <code>comp=MyClass|code=1234|msg=coded message</code> pattern
+     */
+    private static final Pattern CODED_MESSAGE_CHECK_PATTERN = Pattern.compile("(comp=.*\\|){0,1}code=\\d*\\|msg=.*$");
+
+    /**
+     * Prevent creation of instance.
+     */
+    private MessageUtils() {
+        throw new AssertionError("Illegal attempt to create com.vanguard.logging.api.message.MessageUtils");
+    }
+
+    /**
+     * Used by the Vanguard custom log4j appenders to converts an object used in a log4j log to an {@link Message} which contains a log code.
+     * 
+     * <ul>
+     * <li>If the object is an instance of Message, method returns the passed in object typecast to Message</li>
+     * <li>Else to object is converted to a string using Apache commons ObjectUitls.toString() and then the Message is generated using
+     * {@link MessageUtils#convertRenderedStringToMessage(String)}</li>
+     * </ul>
+     * 
+     * @param anObject
+     *            an object supplying the log message.
+     * @return Message to log.
+     */
+    public static final Message convertObjectToMessage(Object anObject) {
+
+        Message messageToReturn;
+
+        // Convert object to a message object.
+        if (anObject instanceof Message) {
+            messageToReturn = (Message) anObject;
+        } else {
+            String msgStr = ObjectUtils.toString(anObject);
+            messageToReturn = convertRenderedStringToMessage(msgStr);
+        }
+
+        return messageToReturn;
+    }
+
+    /**
+     * Converts a rendered log String to a Message object.
+     * 
+     * <p>
+     * If the message is not type <code>comp=|code=replaceWithInteger|msg=replaceWithMessage</code> then aDefaultCode will be used.
+     * 
+     * @param aMessageString
+     *            the message to log.
+     * @param aDefaultCode
+     *            the default error code to use if an error code has not been provided.
+     * @return Message which contains error code and message to log.
+     */
+    private static final Message convertRenderedStringToMessage(String aMessageString) {
+        int code = ErrorCodeConstants.CODE_UNDEFINED;
+        String msgStr = aMessageString;
+        String componentName = StringUtils.EMPTY;
+
+        if (isCodedMessageString(aMessageString)) {
+            String codeStr = StringUtils.substringBetween(aMessageString, MessageConstants.PREFIX_CODE, MessageConstants.MSG_DELIMITOR_STR);
+            componentName = StringUtils.substringBetween(aMessageString, MessageConstants.PREFIX_COMP, MessageConstants.MSG_DELIMITOR_STR);
+            code = NumberUtils.toInt(codeStr, ErrorCodeConstants.CODE_UNDEFINED);
+            msgStr = StringUtils.substringAfter(aMessageString, MessageConstants.PREFIX_MSG);
+        }
+
+        return createMessage(componentName, code, msgStr);
+    }
+
+    /**
+     * Create a diagnostic message.
+     * 
+     * @param anErrorCode
+     *            an error message in {@link ErrorCodeConstants#ALLOWED_ERROR_CODE_RANGE}. Use {@link ErrorCodeConstants#CODE_UNDEFINED} if error code
+     *            is undefined.
+     * @param aMessageFormat
+     *            a valid message format to use for message as dictated by {@linkplain Formatter#format(String, Object...)}
+     * @param aMessageArguments
+     *            optional arguments for message format if message format requires them.
+     */
+    public static final Message createDiagnosticMessage(int anErrorCode, String aMessageFormat, Object... aMessageArguments) {
+        return createMessage(StringUtils.EMPTY, anErrorCode, aMessageFormat, aMessageArguments);
+    }
+
+    /**
+     * Create a diagnostic message.
+     * 
+     * @param aMessageFormat
+     *            a valid message format to use for message as dictated by {@linkplain Formatter#format(String, Object...)}
+     * @param aMessageArguments
+     *            optional arguments for message format.
+     */
+    public static final Message createDiagnosticMessage(String aMessageFormat, Object... aMessageArguments) {
+        return createMessage(StringUtils.EMPTY, ErrorCodeConstants.CODE_UNDEFINED, aMessageFormat, aMessageArguments);
+    }
+
+    /**
+     * Method to create a message to use which contains standard Vanguard logging parameters. This variation is usually used to create messages sent
+     * to specialized loggers which go to custom "log sinks" such as ReportLogger.
+     * 
+     * <p>
+     * This method is also called by other create methods in this utility class.
+     * 
+     * @param aComponentName
+     *            optional name of component making the logging call. Usually simple class name, can be blank or null.
+     * @param anErrorCode
+     *            an error message in {@link ErrorCodeConstants#ALLOWED_ERROR_CODE_RANGE}. Use {@link ErrorCodeConstants#CODE_UNDEFINED} if error code
+     *            is undefined.
+     * @param aMessageFormat
+     *            a valid message format to use for message as dictated by {@linkplain Formatter#format(String, Object...)}
+     * @param aMessageArguments
+     *            optional arguments for message format.
+     */
+    public static final Message createMessage(String aComponentName, int anErrorCode, String aMessageFormat, Object... aMessageArguments) {
+        FormattedMessage msg = new FormattedMessage();
+        msg.setMessageFormat(aMessageFormat);
+        msg.setMessageArguments(aMessageArguments);
+        msg.setErrorCode(anErrorCode);
+        msg.setComponentName(aComponentName);
+        return msg;
+    }
+
+    /**
+     * Check if a String form of the message follows the message coding format.
+     * 
+     * <p>
+     * code=1234|msg=Replaced by message.
+     * 
+     * @return
+     */
+    private static boolean isCodedMessageString(String msg) {
+
+        boolean isCodedMessage = false;
+
+        if (StringUtils.isNotEmpty(msg)) {
+            Matcher matcher = CODED_MESSAGE_CHECK_PATTERN.matcher(msg);
+            isCodedMessage = matcher.matches();
+        }
+        return isCodedMessage;
+    }
+
+}
