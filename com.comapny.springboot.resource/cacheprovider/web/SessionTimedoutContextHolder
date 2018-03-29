@@ -1,0 +1,26 @@
+import javax.servlet.http.HttpSession;
+
+import org.springframework.core.NamedThreadLocal;
+
+/**
+ * @author unkd
+ *
+ */
+public class SessionTimedoutContextHolder {
+
+    @SuppressWarnings("unchecked")
+    private static final ThreadLocal<HttpSession> sessionAttributesHolder = new NamedThreadLocal("SessionTimedoutContextHolder");
+
+    public static void resetSessionAttribute() {
+        sessionAttributesHolder.set(null);
+    }
+
+    public static void setSessionAttribute(HttpSession session) {
+        sessionAttributesHolder.set(session);
+    }
+
+    public static HttpSession getSessionAttribute() {
+        HttpSession session = (HttpSession) sessionAttributesHolder.get();
+        return session;
+    }
+}
