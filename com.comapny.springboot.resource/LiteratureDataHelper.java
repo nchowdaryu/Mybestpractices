@@ -196,3 +196,23 @@ public class LiteratureDataHelper {
 
 	}
 }
+
+public enum LiteratureDeliveryTypeEnum {
+	
+	EMAIL("EMAI"),
+	MAIL("MAIL"),
+	ONLINE_VIEW("DWLD"),
+	ONLINE_PROCESS("ONLN"),
+	PRINT_ON_DEMAND("PODL");
+	
+	private String value;
+	
+	LiteratureDeliveryTypeEnum(final String value) {
+		this.value = value;
+	}
+	
+	public String getValue() {
+		return this.value;
+	}
+
+}
