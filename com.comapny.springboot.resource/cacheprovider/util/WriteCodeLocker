@@ -1,0 +1,29 @@
+import java.util.concurrent.locks.ReadWriteLock;
+
+import org.springframework.util.Assert;
+
+public class WriteCodeLocker {
+    
+    private LockingCode code;
+    
+    private ReadWriteLock lock;
+    
+    public WriteCodeLocker(LockingCode code) {
+        this.code = code;
+        ReadWriteLock lock = code.getLock();
+        Assert.notNull(lock);
+        this.lock = lock;
+    }
+    
+    public void run() {
+        try {
+            lock.writeLock().lock();
+            
+            code.execute();
+            
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+}
