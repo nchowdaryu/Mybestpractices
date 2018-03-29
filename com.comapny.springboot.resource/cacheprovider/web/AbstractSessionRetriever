@@ -1,0 +1,35 @@
+import javax.servlet.http.HttpSession;
+
+abstract class AbstractSessionRetriever implements SessionRetriever {
+    
+    private AbstractSessionRetriever nextRetriever;
+
+    AbstractSessionRetriever(AbstractSessionRetriever nextRetriever) {
+        this.nextRetriever = nextRetriever;
+    }
+
+    public HttpSession getSession() {
+        HttpSession session = getLocalSession();
+        
+        if (session == null) {
+            return tryNextSessionRetriever();
+        }
+        
+        return session;
+    }
+    
+    public String getSessionId() {
+        return getSession().getId();
+    }
+
+    protected abstract HttpSession getLocalSession();
+
+    private HttpSession tryNextSessionRetriever() {
+        if (nextRetriever != null) {
+            return nextRetriever.getSession();
+        }
+        
+        throw new RuntimeException("Illegal configuration for this model. Needs to be configured only for web apps where session will not be null. For more information, please see http://crewhub.vanguard.com/it/vpedia/Wiki%20Pages/Caching%20Provider%20FAQ.aspx#toclink11");
+    }
+
+}
