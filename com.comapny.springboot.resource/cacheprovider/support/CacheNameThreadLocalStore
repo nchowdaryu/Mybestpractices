@@ -1,0 +1,55 @@
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author unkd
+ * 
+ */
+public class CacheNameThreadLocalStore {
+
+    private CacheNameThreadLocalStore() {
+    }
+
+    private static final ThreadLocal<List<String>> threadLocal = new ThreadLocal<List<String>>() {
+        @Override protected List<String> initialValue() {
+            return new ArrayList<String>();
+        }
+    };
+
+    protected static void set(List<String> val) {
+        threadLocal.set(val);
+    }
+
+    protected static List<String> get() {
+        return threadLocal.get();
+    }
+
+    /**
+     * 
+     */
+    protected static void remove() {
+        threadLocal.remove();
+    }
+
+    /**
+     * @param string
+     */
+    protected static void add(String cacheName) {
+        threadLocal.get().add(cacheName);
+    }
+
+    /**
+     * @param string
+     */
+    protected static void remove(String cacheName) {
+        threadLocal.get().remove(cacheName);
+    }
+
+    /**
+     * @param cacheName
+     * @return
+     */
+    protected static boolean contains(String cacheName) {
+        return threadLocal.get().contains(cacheName);
+    }
+}
