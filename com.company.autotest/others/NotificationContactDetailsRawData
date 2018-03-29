@@ -1,0 +1,335 @@
+import javax.validation.constraints.Size;
+
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchErrorMsgConstants;
+import com.company.service.application.ltqtnotification.external.batch.validator.constraint.ValidValues;
+import com.company.validator.constraints.Email;
+import com.company.validator.constraints.NotEmpty;
+import com.company.validator.constraints.Numeric;
+
+public class NotificationContactDetailsRawData {
+	
+	@Size(max = 40 , message = LTQTBatchErrorMsgConstants.ALT_CONT_NAME_INVALID)
+	@ValidValues(notAllowedValues = LTQTBatchErrorMsgConstants.NOT_ALLOWED_CHARS, message = LTQTBatchErrorMsgConstants.ALT_CONT_NAME_INVALID)
+	String alternateContactName;
+	
+	@Numeric(min = 10 ,max = 10 , message = LTQTBatchErrorMsgConstants.ALT_CONT_PHN_INVALID)
+	String alternateContactPhoneNo;
+	
+	@Numeric(max = 7 , message = LTQTBatchErrorMsgConstants.ALT_CONT_EXT_INVALID)
+	String alternateContactEXT;
+	
+	@Email(message = LTQTBatchErrorMsgConstants.ALT_CONT_EMAIL_INVALID)
+	String alternateContactEmail;
+	
+	String primaryContactPoid;
+	
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.PRIM_CONT_NAME_REQ)
+	@Size(max = 40 , message = LTQTBatchErrorMsgConstants.PRI_CONT_NAME_INVALID)
+	@ValidValues(notAllowedValues = LTQTBatchErrorMsgConstants.NOT_ALLOWED_CHARS, message = LTQTBatchErrorMsgConstants.PRI_CONT_NAME_INVALID)
+	String primaryContactName;
+	
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.PRIM_CONT_PHN_REQ)
+	@Numeric(min = 10 ,max = 10 , message = LTQTBatchErrorMsgConstants.PRI_CONT_PHN_INVALID)
+	String primaryContactPhoneNo;
+	
+	@Numeric(max = 7 , message = LTQTBatchErrorMsgConstants.PRI_CONT_EXT_INVALID)
+	String primaryContactEXT;
+	
+	@Email(message = LTQTBatchErrorMsgConstants.PRI_CONT_EMAIL_INVALID)
+	String primaryContactEmail;
+	
+	String department;
+	
+	String division;
+	
+	String subDivision;
+	
+	String crewContactNo;
+	
+	String orgId;
+	
+	public String getOrgId() {
+		return orgId;
+	}
+	public void setOrgId(String orgId) {
+		this.orgId = orgId;
+	}
+	public String getCrewContactNo() {
+		return crewContactNo;
+	}
+	public void setCrewContactNo(String crewContactNo) {
+		this.crewContactNo = crewContactNo;
+	}
+	public String getAlternateContactName() {
+		return alternateContactName;
+	}
+	public void setAlternateContactName(String alternateContactName) {
+		this.alternateContactName = alternateContactName;
+	}
+	public String getAlternateContactPhoneNo() {
+		return alternateContactPhoneNo;
+	}
+	public void setAlternateContactPhoneNo(String alternateContactPhoneNo) {
+		this.alternateContactPhoneNo = alternateContactPhoneNo;
+	}
+	public String getAlternateContactEXT() {
+		return alternateContactEXT;
+	}
+	public void setAlternateContactEXT(String alternateContactEXT) {
+		this.alternateContactEXT = alternateContactEXT;
+	}
+	public String getAlternateContactEmail() {
+		return alternateContactEmail;
+	}
+	public void setAlternateContactEmail(String alternateContactEmail) {
+		this.alternateContactEmail = alternateContactEmail;
+	}
+	public String getPrimaryContactName() {
+		return primaryContactName;
+	}
+	public void setPrimaryContactName(String primaryContactName) {
+		this.primaryContactName = primaryContactName;
+	}
+	public String getPrimaryContactPhoneNo() {
+		return primaryContactPhoneNo;
+	}
+	public void setPrimaryContactPhoneNo(String primaryContactPhoneNo) {
+		this.primaryContactPhoneNo = primaryContactPhoneNo;
+	}
+	public String getPrimaryContactEXT() {
+		return primaryContactEXT;
+	}
+	public void setPrimaryContactEXT(String primaryContactEXT) {
+		this.primaryContactEXT = primaryContactEXT;
+	}
+	public String getPrimaryContactEmail() {
+		return primaryContactEmail;
+	}
+	public void setPrimaryContactEmail(String primaryContactEmail) {
+		this.primaryContactEmail = primaryContactEmail;
+	}
+	public String getPrimaryContactPoid() {
+		return primaryContactPoid;
+	}
+	public void setPrimaryContactPoid(String primaryContactPoid) {
+		this.primaryContactPoid = primaryContactPoid;
+	}
+	public String getDepartment() {
+		return department;
+	}
+	public void setDepartment(String department) {
+		this.department = department;
+	}
+	public String getDivision() {
+		return division;
+	}
+	public void setDivision(String division) {
+		this.division = division;
+	}
+	public String getSubDivision() {
+		return subDivision;
+	}
+	public void setSubDivision(String subDivision) {
+		this.subDivision = subDivision;
+	}
+}
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.validation.Constraint;
+import javax.validation.Payload;
+
+import com.vanguard.validator.internal.constraintvalidators.EmailValidator;
+import com.vanguard.validator.internal.iterablevalidators.EmailIterableValidator;
+
+/**
+ * Indicates that the value must be a valid <a href="http://en.wikipedia.org/wiki/Email_address">Email address</a>.
+ *
+ * <p><strong>For example:</strong> {@code test@vanguard.com}</p>
+ *
+ * <p>An email address is made up of a local part, an @ symbol, then a domain part
+ * and identifies an email box to which email messages are delivered.</p>
+ *
+ * <p>Mail systems often limit their users' choice of name to a subset
+ * of the technically valid characters, and may in some cases also
+ * limit which addresses it is possible to send mail to</p>
+ *
+ * <p>{@code null} elements are considered valid</p>
+ *
+ * @author <a href="http://crewnet.vanguard.com/CrewNetPortal/CrewSearch?id=021139">Jamie Eberly</a>
+ * @see EmailValidator
+ * @see <a href="http://en.wikipedia.org/wiki/Email_address">http://en.wikipedia.org/wiki/Email_address</a>
+ */
+@Documented
+@Constraint(validatedBy = {EmailValidator.class, EmailIterableValidator.class})
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Email {
+
+    /**
+     * @return message for this constraint.
+     */
+    String message() default "{com.vanguard.validator.constraints.Email.message}";
+
+    /**
+     * @return groups for this constraint.
+     */
+    Class<?>[] groups() default {};
+
+    /**
+     * @return payload for this constraint.
+     */
+    Class<? extends Payload>[] payload() default {};
+
+    /**
+     * @return {@link LocaleType} for this constraint.
+     */
+    LocaleType locale() default LocaleType.US;
+
+    /**
+     * Defines several {@code @Email} annotations on the same element.
+     */
+    @Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Documented
+    public @interface List {
+        /**
+         * @return list value for this constraint.
+         */
+        Email[] value();
+    }
+
+}
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+
+import com.vanguard.validator.internal.constraintvalidators.NotEmptyValidator;
+import com.vanguard.validator.internal.iterablevalidators.NotEmptyIterableValidator;
+
+/**
+ * Indicates that the value must not be null or have a length equal to zero
+ * with leading and trailing whitespace omitted.
+ *
+ * @author <a href="http://crewnet.vanguard.com/CrewNetPortal/CrewSearch?id=021139">Jamie Eberly</a>
+ * @see NotEmptyValidator
+ */
+@Documented
+@Constraint(validatedBy = {NotEmptyValidator.class, NotEmptyIterableValidator.class})
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface NotEmpty {
+
+    /**
+     * @return message for this constraint.
+     */
+    String message() default "{com.vanguard.validator.constraints.NotEmpty.message}";
+
+    /**
+     * @return groups for this constraint.
+     */
+    Class<?>[] groups() default {};
+
+    /**
+     * @return payload for this constraint.
+     */
+    Class<? extends Payload>[] payload() default {};
+
+    /**
+     * Defines several {@code @NotEmpty} annotations on the same element.
+     */
+    @Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Documented
+    public @interface List {
+        /**
+         * @return list value for this constraint.
+         */
+        NotEmpty[] value();
+    }
+
+}
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+
+import com.vanguard.validator.internal.constraintvalidators.NumericValidator;
+import com.vanguard.validator.internal.iterablevalidators.NumericIterableValidator;
+
+/**
+ * Indicates that the value must contain only <a href="http://en.wikipedia.org/wiki/Numerical_digit">numeric</a>
+ * characters 0 to 9.
+ *
+ * <p><strong>For example:</strong> {@code 123}</p>
+ *
+ * <p>A numeric is any digit character used in combinations to represent numbers.</p>
+ *
+ * <p>{@code null} elements are considered valid</p>
+ *
+ * @author <a href="http://crewnet.vanguard.com/CrewNetPortal/CrewSearch?id=021139">Jamie Eberly</a>
+ * @see NumericValidator
+ * @see NumericIterableValidator
+ * @see Alpha
+ * @see Alphanumeric
+ * @see <a href="http://en.wikipedia.org/wiki/Numerical_digit">http://en.wikipedia.org/wiki/Numerical_digit</a>
+ */
+@Documented
+@Constraint(validatedBy = {NumericValidator.class, NumericIterableValidator.class})
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Numeric {
+
+    /**
+     * @return message for this constraint.
+     */
+    String message() default "{com.vanguard.validator.constraints.Numeric.message}";
+
+    /**
+     * @return groups for this constraint.
+     */
+    Class<?>[] groups() default {};
+
+    /**
+     * @return payload for this constraint.
+     */
+    Class<? extends Payload>[] payload() default {};
+
+    /**
+     * @return min size for this constraint.
+     */
+    int min() default 1;
+
+    /**
+     * @return max size for this constraint.
+     */
+    int max() default Integer.MAX_VALUE;
+
+    /**
+     * Defines several {@code @Numeric} annotations on the same element.
+     */
+    @Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    @Documented
+    public @interface List {
+        /**
+         * @return list value for this constraint.
+         */
+        Numeric[] value();
+    }
+
+}
