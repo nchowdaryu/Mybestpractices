@@ -1,0 +1,16 @@
+import javax.servlet.http.HttpSession;
+
+public abstract class SessionContextHolder {
+    
+    protected static final SessionRetriever SESSION_RETRIEVERS = new DefaultSessionRetriever(new SessionTimedoutSessionRetriever(new BackgroundThreadSessionRetriever(null)));
+    private static SessionRetriever sessionRetriever = SESSION_RETRIEVERS;
+    
+    static HttpSession getSession() {
+        return sessionRetriever.getSession();
+    }
+
+    static void setSessionRetriever(SessionRetriever retriever) {
+        sessionRetriever = retriever;
+    }
+    
+}
