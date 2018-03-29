@@ -1,0 +1,50 @@
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.springframework.util.Assert;
+
+import com.company.spring.caching.CacheConfiguration;
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+
+public class CacheConfigurationImpl implements CacheConfiguration {
+
+    private boolean blocking;
+
+    private String cacheName;
+
+    private CacheEntryKeyGenerationPolicy cacheEntryKeyGenerationPolicy;
+
+    public CacheConfigurationImpl(String regionName, CacheEntryKeyGenerationPolicy cacheEntryKeyGenerationPolicy, boolean blocking) {
+        Assert.notNull(regionName);
+        Assert.notNull(cacheEntryKeyGenerationPolicy);
+
+        this.cacheName = regionName;
+        this.cacheEntryKeyGenerationPolicy = cacheEntryKeyGenerationPolicy;
+        this.blocking = blocking;
+    }
+
+    public CacheEntryKeyGenerationPolicy getCacheEntryKeyGenerator() {
+        return cacheEntryKeyGenerationPolicy;
+    }
+
+    public String getCacheName() {
+        return cacheName;
+    }
+    
+    public String getCacheNameGeneratorPolicyString() {
+        return "";
+    }
+
+    public boolean isDynamic() {
+        return false;
+    }
+    
+    public boolean isBlocking() {
+        return blocking;
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+    }
+
+}
