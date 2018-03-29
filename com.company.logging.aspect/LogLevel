@@ -1,0 +1,25 @@
+import com.vanguard.logging.api.message.ErrorCodeConstants;
+
+/**
+ * Various log levels for use with the &#64;Loggable annotation.  
+ * 
+ * @author u16t
+ */
+public enum LogLevel {
+
+    ERROR(ErrorCodeConstants.CODE_NGSA_GENERAL_ERROR),
+    WARN(ErrorCodeConstants.CODE_NGSA_GENERAL_WARN),
+    INFO(ErrorCodeConstants.CODE_NGSA_GENERAL_INFO),
+    DEBUG(ErrorCodeConstants.CODE_NGSA_GENERAL_DEBUG),
+    TRACE(ErrorCodeConstants.CODE_NGSA_GENERAL_TRACE);
+    
+    private int defaultErrorCode;
+    
+    private LogLevel(int defaultErrorCode) {
+        this.defaultErrorCode = defaultErrorCode;
+    }
+    
+    int getDefaultErrorCode() {
+        return defaultErrorCode;
+    }
+}
