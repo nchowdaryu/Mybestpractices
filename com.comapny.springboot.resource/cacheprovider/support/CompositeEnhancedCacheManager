@@ -7,9 +7,9 @@ import org.springframework.cache.CacheManager;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import com.vanguard.spring.caching.CacheConfiguration;
-import com.vanguard.spring.caching.EnhancedCache;
-import com.vanguard.spring.caching.EnhancedCacheManager;
+import com.company.spring.caching.CacheConfiguration;
+import com.company.spring.caching.EnhancedCache;
+import com.company.spring.caching.EnhancedCacheManager;
 
 /**
  * Class essentially duplicated from Spring Caching so that we can add our own behavior
