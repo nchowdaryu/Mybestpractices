@@ -1,0 +1,279 @@
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+
+/**
+ * Use the EnterpriseDataSource annotation to qualify any connections
+ * to an enterprise DBMS (used outside of TE Security Services code).
+ * @author uw8h
+ */
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Qualifier
+public @interface EnterpriseDataSource {
+
+}
+enterprise-database-default.properties
+============================================
+# enterprise-database:
+# 	Required variables supplied in an override file,
+#	as a system property or as environment variable. 
+#
+# Override File(s): 
+#	classpath:/META-INF/RTE/${RTEID}/enterprise-database-override.properties
+#	file:${SECURE_SSI_FILE}
+# =============================================
+#	-------------------------------------------
+#	Required variables for standalone
+#	-------------------------------------------
+# ENTERPRISE_JDBC_URL=jdbc:db2://DB2NOTSET:NOTSET/NOTSET
+# ENTERPRISE_USER_ID=NOTSET
+# ENTERPRISE_PASSWORD=NOTSET
+#	-------------------------------------------
+#	Defaulted variables for standalone
+#	-------------------------------------------
+ENTERPRISE_DATABASE_DRIVER_CLASS=com.ibm.db2.jcc.DB2Driver
+ENTERPRISE_ACQUIRE_INCREMENT=2
+ENTERPRISE_IDLE_CONNECTION_TEST_PERIOD=300
+ENTERPRISE_MIN_POOL_SIZE=0
+ENTERPRISE_MAX_POOL_SIZE=25
+ENTERPRISE_MAX_STATEMENTS=50
+ENTERPRISE_BREAK_AFTER_AQUIRE_FAILURE=false
+ENTERPRISE_NUM_HELPER_THREADS=5
+ENTERPRISE_TEST_QUERY=select 1 from sysibm.sysdummy1
+ENTERPRISE_CHECKOUT_TIMEOUT=5000
+ENTERPRISE_AQUIRE_RETRY_EVENTS=3
+ENTERPRISE_MAX_IDLE_TIME=60
+ENTERPRISE_MAX_CONNECTION_AGE=7200
+ENTERPRISE_AUTO_COMMIT_ON_CLOSE=false
+ENTERPRISE_UNRETURNED_CONNECTION_TIMEOUT=0
+ENTERPRISE_DEBUG_UNRETURNED_CONNECTION_STACK=false
+#	-------------------------------------------
+#	No required variables for websphere
+#	-------------------------------------------
+#	-------------------------------------------
+#	Defaulted variables for websphere
+#	-------------------------------------------
+ENTERPRISE_JNDI_NAME=java:comp/env/EnterpriseDataSource
+
+
+spring-bootstrap-standalone.xml
+=============
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<import resource="spring-platform-independent-beans.xml" />
+
+	<!-- DataSource which is wrapped by com.vanguard.common.infrastructure.database.enterprise.Db2AccountingInfoDataSourceAdapter -->
+	<!-- Application should use PropertyOverrideConfigurer to override the default property values as needed. -->
+	<bean id="_enterprise-database-TargetDataSource"
+		class="com.mchange.v2.c3p0.ComboPooledDataSource" autowire-candidate="false">
+		<!-- Overridden in application properties. -->
+		<property name="jdbcUrl"
+			value="$enterprise-database-{ENTERPRISE_JDBC_URL}" />
+		<property name="user"
+			value="$enterprise-database-{ENTERPRISE_USER_ID}" />
+		<property name="password"
+			value="$enterprise-database-{ENTERPRISE_PASSWORD}" />
+		<!-- Defaults provided can be modified in application properties. -->
+		<property name="driverClass"
+			value="$enterprise-database-{ENTERPRISE_DATABASE_DRIVER_CLASS}" />
+		<property name="acquireIncrement"
+			value="$enterprise-database-{ENTERPRISE_ACQUIRE_INCREMENT}" />
+		<property name="idleConnectionTestPeriod"
+			value="$enterprise-database-{ENTERPRISE_IDLE_CONNECTION_TEST_PERIOD}" />
+		<property name="minPoolSize"
+			value="$enterprise-database-{ENTERPRISE_MIN_POOL_SIZE}" />
+		<property name="maxPoolSize"
+			value="$enterprise-database-{ENTERPRISE_MAX_POOL_SIZE}" />
+		<property name="maxStatements"
+			value="$enterprise-database-{ENTERPRISE_MAX_STATEMENTS}" />
+		<property name="breakAfterAcquireFailure"
+			value="$enterprise-database-{ENTERPRISE_BREAK_AFTER_AQUIRE_FAILURE}" />
+		<property name="numHelperThreads"
+			value="$enterprise-database-{ENTERPRISE_NUM_HELPER_THREADS}" />
+		<property name="preferredTestQuery"
+			value="$enterprise-database-{ENTERPRISE_TEST_QUERY}" />
+		<property name="checkoutTimeout" 
+		    value="$enterprise-database-{ENTERPRISE_CHECKOUT_TIMEOUT}" />
+		<property name="acquireRetryAttempts" 
+		    value="$enterprise-database-{ENTERPRISE_AQUIRE_RETRY_EVENTS}" />
+		<property name="maxIdleTime"
+			value="$enterprise-database-{ENTERPRISE_MAX_IDLE_TIME}" />			
+		<property name="maxConnectionAge" 
+			value="$enterprise-database-{ENTERPRISE_MAX_CONNECTION_AGE}"/>
+		<property name="autoCommitOnClose" 
+		    value="$enterprise-database-{ENTERPRISE_AUTO_COMMIT_ON_CLOSE}" />
+		<property name="unreturnedConnectionTimeout" 
+		    value="$enterprise-database-{ENTERPRISE_UNRETURNED_CONNECTION_TIMEOUT}" />
+		<property name="debugUnreturnedConnectionStackTraces" 
+		    value="$enterprise-database-{ENTERPRISE_DEBUG_UNRETURNED_CONNECTION_STACK}" />
+	</bean>
+
+	<!-- Define the delegating data source which will set accounting info properties -->
+	<!-- on the DB2 connection. -->
+	<bean id="enterprise-database-DataSource"
+		class="com.vanguard.spring.jdbc.accounting.support.AccountingInfoDelegatingDataSource" primary="true">
+		<constructor-arg index="0"
+			ref="_enterprise-database-TargetDataSource" />
+		<constructor-arg index="1">
+			<bean
+				class="com.vanguard.spring.jdbc.accounting.db2.Db2AccountingInfoConnectionAdapter" />
+		</constructor-arg>
+		<constructor-arg index="2">
+			<bean
+				class="org.springframework.jdbc.support.nativejdbc.C3P0NativeJdbcExtractor" />
+		</constructor-arg>
+		<qualifier
+			type="com.vanguard.spring.datasource.enterprise.EnterpriseDataSource" />
+	</bean>
+
+	<bean id="enterprise-database-TransactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<qualifier
+			type="com.vanguard.spring.datasource.enterprise.EnterpriseDataSource" />
+		<property name="dataSource"
+			ref="enterprise-database-DataSource" />
+		<property name="rollbackOnCommitFailure" value="true" />
+	</bean>
+</beans>
+
+spring-bootstrap-tomcat.xml
+================
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.5.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+	<import resource="spring-platform-independent-beans.xml" />
+
+	<jee:jndi-lookup id="_enterprise-database-TargetDataSource" jndi-name="$enterprise-database-{ENTERPRISE_JNDI_NAME}"></jee:jndi-lookup>
+	
+	<!-- Define the delegating data source which will set accounting info properties -->
+	<!-- on the DB2 connection. -->
+	<bean id="enterprise-database-DataSource"
+		class="com.vanguard.spring.jdbc.accounting.support.AccountingInfoDelegatingDataSource" primary="true">
+		<constructor-arg index="0"
+			ref="_enterprise-database-TargetDataSource" />
+		<constructor-arg index="1">
+			<bean
+				class="com.vanguard.spring.jdbc.accounting.db2.Db2AccountingInfoConnectionAdapter" />
+		</constructor-arg>
+		<constructor-arg index="2">
+			<bean
+				class="org.springframework.jdbc.support.nativejdbc.CommonsDbcpNativeJdbcExtractor" />
+		</constructor-arg>
+		<qualifier
+			type="com.vanguard.spring.datasource.enterprise.EnterpriseDataSource" />
+	</bean>
+
+	<bean id="enterprise-database-TransactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<qualifier
+			type="com.vanguard.spring.datasource.enterprise.EnterpriseDataSource" />
+		<property name="dataSource"
+			ref="enterprise-database-DataSource" />
+		<property name="rollbackOnCommitFailure" value="true" />
+	</bean>
+</beans>
+
+spring-bootstrap-websphere.xml
+===============
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<import resource="spring-platform-independent-beans.xml" />
+
+
+    <!-- Define the delegating data source which will set accounting info properties -->
+    <!-- on the DB2 connection. -->    
+    <bean id="enterprise-database-DataSource" class="com.vanguard.spring.jdbc.accounting.support.AccountingInfoDelegatingDataSource" primary="true">
+        <constructor-arg index="0" ref="_enterprise-database-TargetDataSource" />
+        <constructor-arg index="1">
+			<bean class="com.vanguard.spring.jdbc.accounting.db2.Db2AccountingInfoConnectionAdapter" />
+        </constructor-arg>
+        <constructor-arg index="2">
+            <bean class="org.springframework.jdbc.support.nativejdbc.WebSphereNativeJdbcExtractor" />
+        </constructor-arg>
+        <qualifier type="com.vanguard.spring.datasource.enterprise.EnterpriseDataSource" />
+    </bean>
+	
+	<jee:jndi-lookup id="_enterprise-database-TargetDataSource" jndi-name="$enterprise-database-{ENTERPRISE_JNDI_NAME}"></jee:jndi-lookup>
+
+	<bean id="enterprise-database-TransactionManager" 
+	    class="org.springframework.transaction.jta.WebSphereUowTransactionManager">
+		<qualifier type="com.vanguard.spring.datasource.enterprise.EnterpriseDataSource" />
+		<property name="uowManager" ref="_enterprise-database-wasUOWTxnManager"/>
+		<property name="rollbackOnCommitFailure" value="true"/>
+	</bean>
+
+	<jee:jndi-lookup id="_enterprise-database-wasUOWTxnManager" jndi-name="java:comp/websphere/UOWManager"/>
+</beans>
+
+spring-platform-independent-beans.xml
+==============
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:lang="http://www.springframework.org/schema/lang"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:config="http://www.vanguard.com/schema/config"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.vanguard.com/schema/config http://www.vanguard.com/schema/config/vanguard-config.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+	
+	<!-- 
+	Tell Spring how to resolve all variables $enterprise-database-{variableName}
+	in the module configuration. 
+	 -->
+	<config:vanguard-property-placeholder moduleId="enterprise-database" />
+	
+	<!-- Allow @Transactional to work with unit test cases and with service code. -->
+	<alias name="enterprise-database-TransactionManager" alias="transactionManager"/>
+	
+	<!-- Add annotation driven transactions
+	     The order must match the AspectOrder.TRANSACTION order.  
+	     The construct does not allow anything but hard coded int order order.
+	-->
+	<tx:annotation-driven transaction-manager="enterprise-database-TransactionManager" order="4000"/>
+	
+</beans>
