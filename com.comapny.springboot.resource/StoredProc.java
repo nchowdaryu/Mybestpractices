@@ -112,6 +112,181 @@ public class RetreiveAllLiteratureStoredProcedure extends RetailAbstractStoredPr
 
 }
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.jdbc.core.SqlParameter;
+
+import com.company.spring.storedproc.CommonStoredProcHeaderParameters;
+import com.company.spring.storedproc.core.AbstractStoredProcHeader;
+
+public class RetailStoredProcedureHeader extends AbstractStoredProcHeader {
+
+	private static final String WEBTOP = "WEBTOP";
+
+	private String packageName;
+
+	@Override
+	public List<SqlParameter> getHeaderTypes() {
+		return CommonStoredProcHeaderParameters.getSqlParameters();
+	}
+
+	@Override
+	public Map<String, Object> getHeaderValues() {
+		Map<String, Object> parmValues = new HashMap<String, Object>();
+		parmValues.put(CommonStoredProcHeaderParameters.PACKAGE, packageName);
+		parmValues.put(CommonStoredProcHeaderParameters.APPNM, WEBTOP);
+		parmValues.put(CommonStoredProcHeaderParameters.USERID, WEBTOP);
+		parmValues.put(CommonStoredProcHeaderParameters.APPLID, WEBTOP);
+		parmValues.put(CommonStoredProcHeaderParameters.TS, StringUtils.EMPTY);
+		parmValues.put(CommonStoredProcHeaderParameters.ESEVERE,
+				StringUtils.EMPTY);
+		parmValues.put(CommonStoredProcHeaderParameters.ENUM, 0);
+		parmValues.put(CommonStoredProcHeaderParameters.EGROUP, 0);
+		parmValues.put(CommonStoredProcHeaderParameters.ESQLCD, 0);
+		parmValues
+				.put(CommonStoredProcHeaderParameters.EPGM, StringUtils.EMPTY);
+		parmValues.put(CommonStoredProcHeaderParameters.ETEXT,
+				StringUtils.EMPTY);
+		parmValues.put(CommonStoredProcHeaderParameters.EDBAVAIL,
+				StringUtils.EMPTY);
+		return parmValues;
+	}
+
+	public void setPackageName(String packageName) {
+		this.packageName = packageName;
+	}
+
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.jdbc.core.SqlParameter;
+
+/**
+ * Common stored procedure header parameter values. This should be used by {@link StoredProcHeader} subclasses that define these parameters. For
+ * example, when implementing {@link StoredProcHeader#getHeaderValues()}, prefer:
+ * <p />
+ * {@code Map<String, Object> parmValues = new HashMap<String, Object>(); } <br />
+ * {@code (add in injected package and other values) } <br />
+ * {@code parmValues.put(CommonStoredProcHeaderParameters.ETEXT, StoredProcConstants.SPACE_STRING); }
+ * <p />
+ * instead of
+ * <p />
+ * {@code Map<String, Object> parmValues = new HashMap<String, Object>(); } <br />
+ * {@code (add in injected package and other values) <br /> } {@code parmValues.put("ETEXT", " "); }
+ * <p />
+ * <p />
+ * Using this constants class reduces the number of unnecessary object instances and also reduces the chance for typos.
+ * <p />
+ * This class is also extensible for teams that wish to add parameters. Simply create a class that extends CommonStoredProcHeaderParameters and add
+ * your own parameters, then the subclass can add to the list provided by CommonStoredProcHeaderParameters.getSqlParameters()
+ */
+public class CommonStoredProcHeaderParameters {
+
+    /**
+     * Must not be private since teams are allowed to subclass, e.g. for ImtUpdateStoredProcHeaderParameters. This enables flexibility to change one
+     * class and have it update all of the parameters in application code. However, there should not be any reason to directly instantiate this class
+     * within application code.
+     */
+    protected CommonStoredProcHeaderParameters() {
+
+    }
+
+    // Parameter name constants
+
+    public static final String PACKAGE = "PACKAGE";
+
+    public static final String APPNM = "APPNM";
+
+    public static final String USERID = "USERID";
+
+    public static final String APPLID = "APPLID";
+
+    public static final String TS = "TS";
+
+    public static final String ESEVERE = "ESEVERE";
+
+    public static final String ENUM = "ENUM";
+
+    public static final String EGROUP = "EGROUP";
+
+    public static final String ESQLCD = "ESQLCD";
+
+    public static final String EPGM = "EPGM";
+
+    public static final String ETEXT = "ETEXT";
+
+    public static final String EDBAVAIL = "EDBAVAIL";
+
+    // SqlParameter constants
+
+    public static final SqlParameter PACKAGE_PARAMETER = SqlParameterFactory.createString(PACKAGE, SqlParameterModes.IN);
+
+    public static final SqlParameter APPNM_PARAMETER = SqlParameterFactory.createString(APPNM, SqlParameterModes.IN);
+
+    public static final SqlParameter USERID_PARAMETER = SqlParameterFactory.createString(USERID, SqlParameterModes.IN);
+
+    public static final SqlParameter APPLID_PARAMETER = SqlParameterFactory.createString(APPLID, SqlParameterModes.IN);
+
+    public static final SqlParameter TS_PARAMETER = SqlParameterFactory.createString(TS, SqlParameterModes.INOUT);
+
+    public static final SqlParameter ESEVERE_PARAMETER = SqlParameterFactory.createString(ESEVERE, SqlParameterModes.INOUT);
+
+    public static final SqlParameter ENUM_PARAMETER = SqlParameterFactory.createInteger(ENUM, SqlParameterModes.INOUT);
+
+    public static final SqlParameter EGROUP_PARAMETER = SqlParameterFactory.createInteger(EGROUP, SqlParameterModes.INOUT);
+
+    public static final SqlParameter ESQLCD_PARAMETER = SqlParameterFactory.createInteger(ESQLCD, SqlParameterModes.INOUT);
+
+    public static final SqlParameter EPGM_PARAMETER = SqlParameterFactory.createString(EPGM, SqlParameterModes.INOUT);
+
+    public static final SqlParameter ETEXT_PARAMETER = SqlParameterFactory.createString(ETEXT, SqlParameterModes.INOUT);
+
+    public static final SqlParameter EDBAVAIL_PARAMETER = SqlParameterFactory.createString(EDBAVAIL, SqlParameterModes.INOUT);
+
+    public static List<SqlParameter> getSqlParameters() {
+        List<SqlParameter> commonHeaderParameters = new ArrayList<SqlParameter>();
+        commonHeaderParameters.add(PACKAGE_PARAMETER);
+        commonHeaderParameters.add(APPNM_PARAMETER);
+        commonHeaderParameters.add(USERID_PARAMETER);
+        commonHeaderParameters.add(APPLID_PARAMETER);
+        commonHeaderParameters.add(TS_PARAMETER);
+        commonHeaderParameters.add(ESEVERE_PARAMETER);
+        commonHeaderParameters.add(ENUM_PARAMETER);
+        commonHeaderParameters.add(EGROUP_PARAMETER);
+        commonHeaderParameters.add(ESQLCD_PARAMETER);
+        commonHeaderParameters.add(EPGM_PARAMETER);
+        commonHeaderParameters.add(ETEXT_PARAMETER);
+        commonHeaderParameters.add(EDBAVAIL_PARAMETER);
+        return commonHeaderParameters;
+    }
+}
+
+import com.company.spring.storedproc.StoredProcHeader;
+
+/**
+ * Base class for stored procedure headers, providing a schema field with a setter for dependency injection. Application teams should typically extend
+ * this class instead of directly implementing StoredProcHeader.
+ * 
+ * @see StoredProcHeader
+ */
+public abstract class AbstractStoredProcHeader implements StoredProcHeader {
+
+    private String schemaName;
+
+    public void setSchemaName(String schema) {
+        this.schemaName = schema;
+    }
+
+    public String getSchemaName() {
+        return this.schemaName;
+    }
+}
+
 import javax.inject.Named;
 import javax.sql.DataSource;
 
@@ -137,7 +312,37 @@ public abstract class RetailAbstractStoredProcedure extends
 	}
 }
 
+import java.util.List;
+import java.util.Map;
 
+import org.springframework.jdbc.core.SqlParameter;
+
+/**
+ * Provides common headers and schema configuration for stored procedures
+ */
+public interface StoredProcHeader {
+
+    /**
+     * Region specific schema name - based on configuration
+     * 
+     * @return the schema to use
+     */
+    String getSchemaName();
+
+    /**
+     * Header parameter types returned as SqlParameters
+     * 
+     * @return List<SqlParameter> containing the header types
+     */
+    List<SqlParameter> getHeaderTypes();
+
+    /**
+     * Values for defined header types
+     * 
+     * @return Map containing the header values where the keys are header parameter names
+     */
+    Map<String, Object> getHeaderValues();
+}
 
 import java.util.ArrayList;
 import java.util.Collections;
