@@ -1,0 +1,15 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.util.Assert;
+
+public class TargetClassNameAppender extends AbstractAppender {
+
+    @Override
+    public String processCacheKeyData(ProceedingJoinPoint pjp) {
+        Assert.notNull(pjp);
+        Object target = pjp.getTarget();
+        String targetClassName = target.getClass().getName();
+
+        return targetClassName;
+    }
+
+}
