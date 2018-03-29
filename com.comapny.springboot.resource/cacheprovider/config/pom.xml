@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<parent>
+		<groupId>com.company.ngsa</groupId>
+		<artifactId>parent</artifactId>
+		<version>4.6-M20160322-01</version>
+	</parent>
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.company</groupId>
+	<artifactId>caching-provider</artifactId>
+	<version>4.0-M20160413-01</version>
+	<packaging>jar</packaging>
+	<name>SEE Declarative Caching Provider</name>
+	<description>
+		The caching provider provides declarative caching facility that can be used by application components to provide data
+		caching in the mid-tier.
+	</description>
+
+	<scm>
+		<connection>
+			scm:svn:http://prdsvnrepo:8080/svn/tip/ngsa/projects/project-common-components/caching-provider/tags/4.0-M20160413-01
+		</connection>
+		<developerConnection>
+			scm:svn:http://prdsvnrepo:8080/svn/tip/ngsa/projects/project-common-components/caching-provider/tags/4.0-M20160413-01
+		</developerConnection>
+	</scm>
+
+	<mailingLists>
+	    <mailingList>
+			<name>CTO Cloud App Arch</name>
+		</mailingList>
+	</mailingLists>
+
+	<properties>
+		<deployment.type>external-and-internal</deployment.type>
+		<pom.analysis.runPercentage>100</pom.analysis.runPercentage>
+		<mats.module.type>technical-service-api</mats.module.type>
+		<aop-dependencies-version>3.0-M20160322-01</aop-dependencies-version>
+		<commons-functors-version>2.0-M20150604-01</commons-functors-version>
+		<servlet.version>3.0</servlet.version>
+		<servicelocator.version>3.0-M20160404-01</servicelocator.version>
+		<vanguard-spring-core-version>4.0-M20160413-01</vanguard-spring-core-version>
+		<cbac.baseline.url>http://prdsvnrepo:8080/svn/tip/ngsa/projects/project-common-components/caching-provider/trunk</cbac.baseline.url>
+		<sonar.cloc.baseline.url>http://prdsvnrepo:8080/svn/tip/ngsa/projects/project-common-components/caching-provider/trunk</sonar.cloc.baseline.url>
+	</properties>
+
+	<dependencies>
+
+		<!-- Required to support HttpSessionCleaner implementation which can only 
+			be used in J2EE container -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>${servlet.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.company</groupId>
+			<artifactId>aop-dependencies</artifactId>
+			<version>${aop-dependencies-version}</version>
+			<type>pom</type>
+		</dependency>
+
+		<dependency>
+			<groupId>com.vanguard</groupId>
+			<artifactId>springbeans-servicelocator</artifactId>
+			<version>${servicelocator.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.company</groupId>
+			<artifactId>vanguard-spring-core</artifactId>
+			<version>${company-spring-core-version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>ibmjsseprovider2</artifactId>
+					<groupId>com.ibm.jsse</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>ibmpkcs</artifactId>
+					<groupId>com.ibm.jsse</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aop</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.vanguard</groupId>
+			<artifactId>commons-functors</artifactId>
+			<version>${commons-functors-version}</version>
+		</dependency>
+        
+		<!-- Runtime only libraries -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context-support</artifactId>
+			<version>${spring.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+	</dependencies>
+
+</project>
