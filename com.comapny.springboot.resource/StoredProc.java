@@ -132,11 +132,11 @@ import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
-import com.vanguard.logging.api.logger.ReportLogger;
-import com.vanguard.logging.api.performance.Profiler;
-import com.vanguard.spring.storedproc.StoredProcHeader;
-import com.vanguard.spring.storedproc.StoredProcInitializationException;
-import com.vanguard.spring.storedproc.StoredProcPerformanceMonitor;
+import com.company.logging.api.logger.ReportLogger;
+import com.company.logging.api.performance.Profiler;
+import com.company.spring.storedproc.StoredProcHeader;
+import com.company.spring.storedproc.StoredProcInitializationException;
+import com.company.spring.storedproc.StoredProcPerformanceMonitor;
 
 /**
  * An AbstractStoredProcedure is a multi-threaded, reusable base object representing a call to a stored procedure. It is designed for extension with
@@ -664,4 +664,25 @@ public abstract class AbstractStoredProcedure {
      * @return DataSource used to execute this procedure
      */
     protected abstract DataSource getDataSource();
+}
+
+import org.springframework.dao.DataAccessException;
+
+/**
+ * Application teams can throw this within an overriden {@link com.vanguard.spring.storedproc.core.AbstractStoredProcedure#onInit()} method
+ */
+public class StoredProcInitializationException extends DataAccessException {
+
+    /**
+     * Default serializable id.
+     */
+    private static final long serialVersionUID = 1L;
+
+    public StoredProcInitializationException(String anMsg) {
+        super(anMsg);
+    }
+
+    public StoredProcInitializationException(String anMsg, Throwable anCause) {
+        super(anMsg, anCause);
+    }
 }
