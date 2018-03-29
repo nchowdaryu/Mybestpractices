@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- There should not be any reason why application teams should refer to this bean directly, 
+	the id element is here to show up in logging during ApplicationContext initialization. -->
+	<bean id="_cacheAspectRemover" class="com.vanguard.spring.caching.aspects.CacheAspectRemover" />
+ 
+</beans>
