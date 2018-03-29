@@ -1,0 +1,14 @@
+import javax.servlet.http.HttpSession;
+
+class SessionTimedoutSessionRetriever extends AbstractSessionRetriever {
+
+    SessionTimedoutSessionRetriever(AbstractSessionRetriever nextRetriever) {
+        super(nextRetriever);
+    }
+
+    @Override
+    protected HttpSession getLocalSession() {
+        return SessionTimedoutContextHolder.getSessionAttribute();
+    }
+
+}
