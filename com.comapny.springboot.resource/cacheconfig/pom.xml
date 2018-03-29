@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.company.ngsa</groupId>
+  		<artifactId>parent</artifactId>
+  		<version>4.6-M20160322-01</version>
+  	</parent>
+
+	<groupId>com.company</groupId>
+	<artifactId>caching-provider-ehcache</artifactId>
+	<packaging>jar</packaging>
+	<version>4.0-M20160413-01</version>
+	<name>caching-provider-ehcache</name>
+	<scm>
+		<connection>
+			scm:svn:http://prdsvnrepo:8080/svn/tip/ngsa/projects/project-common-components/caching-provider-ehcache/tags/4.0-M20160413-01
+		</connection>
+		<developerConnection>
+			scm:svn:http://prdsvnrepo:8080/svn/tip/ngsa/projects/project-common-components/caching-provider-ehcache/tags/4.0-M20160413-01
+		</developerConnection>
+	</scm>
+
+    <mailingLists>
+        <mailingList>
+            <name>CTO Cloud App Arch</name>
+        </mailingList>
+    </mailingLists>
+
+	<properties>
+		<deployment.type>external-and-internal</deployment.type>
+		<pom.analysis.runPercentage>100</pom.analysis.runPercentage>
+		<mats.module.type>technical-service-impl</mats.module.type>
+		<ehcache.version>2.10.0</ehcache.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.company</groupId>
+			<artifactId>caching-provider</artifactId>
+			<version>4.0-M20160413-01</version>
+		</dependency>
+		
+		<dependency>
+  			<groupId>com.company</groupId>
+		  	<artifactId>caching-provider-common</artifactId>
+			<version>4.0-M20160413-01</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>net.sf.ehcache</groupId>
+			<artifactId>ehcache</artifactId>
+			<version>${ehcache.version}</version>
+		</dependency>
+	</dependencies>
+</project>
