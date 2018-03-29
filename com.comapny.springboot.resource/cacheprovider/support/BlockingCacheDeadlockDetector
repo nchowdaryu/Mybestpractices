@@ -1,0 +1,89 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.EnhancedCache;
+import com.company.spring.caching.util.CachingProviderErrorCodes;
+
+
+/**
+ * @author unkd
+ * 
+ */
+@Component("blockingCacheDeadlockDetector")
+public class BlockingCacheDeadlockDetector {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(BlockingCacheDeadlockDetector.class);
+    private static boolean nestedBlockingCacheCallDetectionEnabled = true;
+    
+    static {
+        if (System.getProperty("DISABLE_NESTED_CACHE_CALLS_DETECTION") != null) {
+            setNestedBlockingCacheCallDetectionEnabled(false);
+        }
+    }
+
+    /**
+     * Clear blocking cache name stored in the ThreadLocal. This is called before exiting Cache entry aspect to clear out the cache name that was
+     * stored on entry.
+     * 
+     * @param cache
+     *            Blocking cache name to clear from ThreadLocal store
+     * 
+     */
+    public void clearCacheNameInThreadLocalStore(EnhancedCache cache) {
+        if (isNestedBlockingCacheCallDetectionEnabled() && (cache != null) && cache.isBlocking()) {
+        	LOGGER.info("Clearing thread storage for cache {}", cache.getName());
+            CacheNameThreadLocalStore.remove(cache.getName());
+        }
+    }
+
+    /**
+     * @return
+     */
+    private static boolean isNestedBlockingCacheCallDetectionEnabled() {
+        return nestedBlockingCacheCallDetectionEnabled;
+    }
+
+    /**
+     * This method is called up on the entry of Cache Entry Aspect. The method If the same Blocking cache name exists in the Thread Local store
+     * indicates a nested caching call to the same Blocking cache
+     * 
+     * @param cache
+     *            Blocking cache name
+     * 
+     */
+    public boolean isNestedBlockingCache(EnhancedCache cache) {
+        if (!isNestedBlockingCacheCallDetectionEnabled()) {
+            return false;
+        }
+
+        if (!(cache.isBlocking())) {
+            return false;
+        }
+
+        String cacheName = cache.getName();
+        LOGGER.info("Checking thread storage for cache name {}",  cacheName);
+
+        boolean isNestedBlockingCacheCall = false;
+
+        if (CacheNameThreadLocalStore.contains(cacheName)) {
+        	LOGGER.error(MarkerFactory.getMarker(CachingProviderErrorCodes.NESTED_CACHING_CALL.getCode()), "Cache name already in threadstorage, nested caching call for cache {}", cacheName);
+            isNestedBlockingCacheCall = true;
+        } else {
+        	LOGGER.info("Populating cache name in thread storage for cache ", cacheName);
+            CacheNameThreadLocalStore.add(cacheName);
+            isNestedBlockingCacheCall = false;
+        }
+
+        return isNestedBlockingCacheCall;
+    }
+
+    /**
+     * @param nestedBlockingCacheCallDetectionEnabled
+     *            the nestedBlockingCacheCallDetectionEnabled to set
+     */
+    protected static void setNestedBlockingCacheCallDetectionEnabled(boolean nestedBlockingCacheCallDetectionEnabled) {
+        BlockingCacheDeadlockDetector.nestedBlockingCacheCallDetectionEnabled = nestedBlockingCacheCallDetectionEnabled;
+    }
+}
