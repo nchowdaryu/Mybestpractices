@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+
+	<!--  Import this file only when the AOP autoproxy is not enabled or custom key generators have to be used.  -->
+
+	<!--  Defines the CACHING ASPECT BEAN  -->
+	<bean id="aspectCacheInterceptors" abstract="true">
+		<constructor-arg ref="caching-provider-cacheManager" />
+		<constructor-arg ref="pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy" />
+	</bean>
+
+	<bean id="cachePopulatorAspect" class="com.vanguard.spring.caching.aspects.CacheEntryCreatorAspect" parent="aspectCacheInterceptors"/>
+	<bean id="cacheEntryFlusherAspect" class="com.vanguard.spring.caching.aspects.SingleKeyCacheFlushAspect" parent="aspectCacheInterceptors"/>
+	<bean id="cacheFlushAspect" class="com.vanguard.spring.caching.aspects.CacheFlushAspect" parent="aspectCacheInterceptors"/>
+
+	<!-- Key Generation polity only the method arguments tostring output to generate cache key-->
+	<bean id="pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy"
+		class="com.vanguard.spring.caching.support.PointcutMethodArgumentsCacheEntryKeyGeneratorPolicy">
+	</bean>
+
+	<!-- Cache Name generator beans -->
+	<bean id="threadscopedCacheNameGeneratorPolicy"
+		class="com.vanguard.spring.caching.support.ThreadscopedCacheNameGeneratorPolicy">
+	</bean>
+
+	<bean id="httpSessionscopedCacheNameGeneratorPolicy"
+		class="com.vanguard.spring.caching.support.web.HttpSessionscopedCacheNameGeneratorPolicy">
+	</bean>
+
+	<bean id="dynamicCacheCleaner" class="com.vanguard.spring.caching.eventlisteners.DynamicCacheCleaner"></bean>
+
+	<!-- Key Generation policy which will use the Target class name, target method name and all of the method arguments tostring output -->
+	<bean id="pointcutParametersCacheEntryKeyGenerationPolicy"
+		class="com.vanguard.spring.caching.support.PointcutParametersCacheEntryKeyGenerationPolicy">
+		<!-- property name="useTargetClassName" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+		<!-- property name="useMethodArguments" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+		<!-- property name="useMethodName" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+	</bean>
+
+	<!-- Key Generation policy which will use target method name and all of the method arguments tostring output -->
+	<bean id="pointcutParametersCacheEntryKeyGenerationPolicyExcludeTargetName"
+		class="com.vanguard.spring.caching.support.PointcutParametersCacheEntryKeyGenerationPolicy">
+		<!-- property name="useTargetClassName" value="true" /-->
+		<constructor-arg value="false"></constructor-arg>
+		<!-- property name="useMethodName" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+		<!-- property name="useMethodArguments" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+	</bean>
+
+	<!-- Key Generation policy which will use the Target class name and all of the method arguments tostring output -->
+	<bean id="pointcutParametersCacheEntryKeyGenerationPolicyExcludeMethodName"
+		class="com.vanguard.spring.caching.support.PointcutParametersCacheEntryKeyGenerationPolicy">
+		<!-- property name="useTargetClassName" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+		<!-- property name="useMethodName" value="true" /-->
+		<constructor-arg value="false"></constructor-arg>
+		<!-- property name="useMethodArguments" value="true" /-->
+		<constructor-arg value="true"></constructor-arg>
+	</bean>
+
+	<bean id="clientResetEventListener" class="com.vanguard.spring.caching.eventlisteners.ClientResetEventListener" />
+
+	<bean id="httpSessionInvalidatedEventListener" class="com.vanguard.spring.caching.eventlisteners.HttpSessionInvalidatedEventListener" />
+	
+	<bean id="blockingCacheDeadlockDetector" class="com.vanguard.spring.caching.support.BlockingCacheDeadlockDetector" />
+	
+</beans>
