@@ -1,0 +1,26 @@
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.CacheNameGenerationPolicy;
+
+public class DynamicCacheConfigurationImpl extends CacheConfigurationImpl{
+
+    private CacheNameGenerationPolicy cacheNameGeneratorPolicy;
+
+    public DynamicCacheConfigurationImpl(String regionName, CacheNameGenerationPolicy cacheNameGeneratorPolicy, CacheEntryKeyGenerationPolicy cacheEntryKeyGenerationPolicy, boolean blocking) {
+        super(regionName, cacheEntryKeyGenerationPolicy, blocking);
+        this.cacheNameGeneratorPolicy = cacheNameGeneratorPolicy;
+    }
+
+    @Override
+    public String getCacheNameGeneratorPolicyString() {
+        if (cacheNameGeneratorPolicy != null) {
+            return cacheNameGeneratorPolicy.generateCacheName();
+        }
+        return "";
+    }
+
+    @Override
+    public boolean isDynamic() {
+        return cacheNameGeneratorPolicy != null;
+    }
+    
+}
