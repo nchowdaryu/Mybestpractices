@@ -1,0 +1,92 @@
+import java.util.Collection;
+
+import org.apache.commons.collections.Predicate;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.EnhancedCache;
+import com.company.spring.caching.EnhancedCacheManager;
+import com.company.spring.caching.annotations.CacheFlush;
+import com.company.spring.caching.util.KeyGroupIdPredicate;
+
+/**
+ * @author uiak
+ * 
+ */
+@Aspect
+@Component("cacheFlushAspect")
+@Order
+public class CacheFlushAspect extends AbstractCachingInterceptor {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(CacheFlushAspect.class);
+    
+	 /**
+     * @param anCacheManager
+     * @param anPointcutMethodArgumentsCacheEntryKeyGeneratorPolicy
+     */
+    @Autowired
+    CacheFlushAspect(
+	    @Qualifier("cacheManager")
+	    EnhancedCacheManager cacheManager,
+	    @Qualifier("pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy")
+	    CacheEntryKeyGenerationPolicy pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy) {
+        super(cacheManager, pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy);
+    }
+    
+    @Override
+    public int getOrder() {
+        return cachFlushAspectOrder;
+    }
+
+    @Pointcut("@annotation(cacheflush)")
+    public void cacheFlushPointCut(CacheFlush cacheflush) {
+    }
+
+    @Around(value = "cacheFlushPointCut(cacheflushable)", argNames = "cacheflushable")
+    public Object interceptForFlushingCache(ProceedingJoinPoint pjp, CacheFlush cacheflushable) throws Throwable {
+
+    	LOGGER.trace("Applying CacheFlush Aspect on {}", pjp.toLongString());
+    	LOGGER.trace("Executing method marked for cache removal for cache {}", cacheflushable.cache());
+    	
+        Object result = pjp.proceed();
+    
+    	String cachingConfigurationName = cacheflushable.cache();
+    	String multiplekeygroupids = cacheflushable.keysgroupid();
+    
+    	EnhancedCache cache = cacheManager.getCache(cachingConfigurationName);
+    
+    	if (SharedEhAndGemFireCode.hasDefaultKeyGroupId(multiplekeygroupids)) {
+    		LOGGER.trace("Removing all entries from cache {}", cache.getName());        
+            cache.clear();        
+    	    return result;
+    	}
+    
+        applyMultipleKeyGroups(cachingConfigurationName, cache, multiplekeygroupids);
+    	return result;
+    }
+
+    /**
+     * @param cachingConfigurationName
+     * @param configuredCache
+     * @param keygroupids
+     */
+    void applyMultipleKeyGroups(String cachingConfigurationName, EnhancedCache cache, String multiplekeygroupids) {
+
+        Collection<String> keyGroupIds = SharedEhAndGemFireCode.splitUpAndFilter(multiplekeygroupids);
+
+        for (String keygroupid : keyGroupIds) {
+        	LOGGER.trace("Removing cache entries with key group id of {} from cache {}", keygroupid, cache.getName());
+            Predicate predicate = new KeyGroupIdPredicate(keygroupid);
+            cache.removeMatchingKeys(predicate);
+        }
+    }
+}
