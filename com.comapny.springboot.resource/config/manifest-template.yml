@@ -1,0 +1,6 @@
+timeout: 180
+instances: 1
+applications:
+- name: $application.name$-$application.version$
+  buildpack: java_buildpack_offline_v44
+  path: target/$application.name$-$application.version$.jar
