@@ -1,0 +1,41 @@
+package com.vanguard.logging.api.message;
+
+/**
+ * common constants used to create messages and parse messages used by logging methods.
+ * 
+ * @author uw8h
+ */
+public final class MessageConstants {
+
+    /**
+     * Prevent creation of instance.
+     */
+    private MessageConstants() {
+        throw new AssertionError("Illegal attempt to create com.vanguard.logging.api.message.MessageConstants");
+    }
+
+    /**
+     * Delimiter for section of the message.
+     */
+    public static final char MSG_DELIMITOR = '|';
+
+    /**
+     * Delimiter in the form of a String.
+     */
+    public static final String MSG_DELIMITOR_STR = String.valueOf(MSG_DELIMITOR);
+
+    /**
+     * Prefix for the message portion of a logged message.
+     */
+    public static final String PREFIX_MSG = "msg=";
+
+    /**
+     * Prefix for the code portion of a logged message.
+     */
+    public static final String PREFIX_CODE = "code=";
+
+    /**
+     * Prefix for the comp portion of a logged message.
+     */
+    public static final String PREFIX_COMP = "comp=";
+}
