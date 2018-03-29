@@ -1,0 +1,14 @@
+<ehcache>
+
+	<!--  diskStore path="c:\\stage" / -->
+	<diskStore path="user.dir" />
+	
+	
+	<defaultCache maxElementsInMemory="20" eternal="false"
+		timeToIdleSeconds="10" timeToLiveSeconds="30" overflowToDisk="false"
+		diskSpoolBufferSizeMB="10" maxElementsOnDisk="1"
+		diskPersistent="false" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LRU">
+	</defaultCache>
+
+</ehcache>
