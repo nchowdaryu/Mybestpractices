@@ -21,7 +21,7 @@
 		<property name="timeToLive" value="$caching-provider-{CLIENT_CACHE_TIME_TO_LIVE}" />
     </bean>
 
-    <bean id="clientSessionConfiguration" class="com.vanguard.spring.caching.support.DynamicCacheConfiguration">
+    <bean id="clientSessionConfiguration" class="com.company.spring.caching.support.DynamicCacheConfiguration">
         <constructor-arg ref="clientCacheFactory" />
         <constructor-arg ref="$caching-provider-{CLIENT_CACHE_NAME_GENERATOR_POLICY}" />
         <constructor-arg ref="pointcutParametersCacheEntryKeyGenerationPolicy" />
