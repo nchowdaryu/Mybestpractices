@@ -1,0 +1,36 @@
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import com.vanguard.spring.caching.CacheConfiguration;
+import com.vanguard.spring.caching.events.ObjectCacheDeleteEvent;
+
+/**
+ * This listener gets invoked when HttpSession is  invalidated and 
+ * ObjectCacheDeleteEvent is published by a listener implementing 
+ * ApplicationListener.
+ * 
+ * This listener is injected with cache name generation policies implementing
+ * CacheNameGenerationPolicy. The listener iterates through each policy,
+ * generates the cache names and removes the cache from Cache Manager.
+ */
+@Component("objectCacheDeleteEventListener")
+public class ObjectCacheDeleteEventListener implements ApplicationListener<ObjectCacheDeleteEvent> {
+    
+	private static final Logger LOGGER = LoggerFactory.getLogger(ObjectCacheDeleteEventListener.class);
+
+    @Autowired(required=false)
+    private List<CacheConfiguration> cacheConfigurations;
+
+    @Autowired
+    private DynamicCacheCleaner dynamicCacheCleaner;
+
+    public void onApplicationEvent(ObjectCacheDeleteEvent event) {
+    	LOGGER.trace("Processing Object Cache Delete Event.");
+        dynamicCacheCleaner.removeCaches(cacheConfigurations);
+    }
+}
