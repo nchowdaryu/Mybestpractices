@@ -1,0 +1,55 @@
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
+import org.springframework.web.context.request.RequestContextHolder;
+
+import com.company.spring.caching.events.HttpSessionInvalidatedEvent;
+import com.company.spring.caching.util.CachingProviderErrorCodes;
+import com.company.spring.core.events.ApplicationEventPublisherService;
+
+public class SessionCacheProviderSessionListener implements HttpSessionListener {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SessionCacheProviderSessionListener.class);
+    
+    public void sessionCreated(HttpSessionEvent anSe) {
+    }
+
+    public void sessionDestroyed(HttpSessionEvent httpSessionevent) {
+    	LOGGER.trace("Publishing HttpSessionInvalidatedEvent.");
+        
+        /*
+         * Session invalidation occurs either programatically or via session timeout If the session invalidation occurs via a timeout, the
+         * RequestContextHolder.getRequestAttributes() is null In order for the cache name generation policies to work that depend on session
+         * attribute to generate cache name the HttpSession object is made available via the ThreadLocalStore
+         */
+        if (RequestContextHolder.getRequestAttributes() == null) {
+        	LOGGER.info("Http Session {}  timed out. Attaching the session to this thread, making it available to the downstream dynamic cache name generation policies that depend on session.", httpSessionevent.getSession().getId());
+            SessionTimedoutContextHolder.setSessionAttribute(httpSessionevent.getSession());
+        }
+        
+        try {
+        	publishEvent();
+        }
+        catch (IllegalStateException ise) {
+            // See TeamTrack 1148 - this logic should occur only if the ApplicationContext failed in initialization
+        	// This can also occur if no dynamic cache was created before logoff. 'CacheManager is not alive' will appear in logs.
+        	LOGGER.warn(MarkerFactory.getMarker(CachingProviderErrorCodes.COULD_NOT_PUBLISH_SESSION_INVALIDATED.getCode()), "Could not publish HttpSessionInvalidatedEvent due to exception.", ise);
+        } finally {
+        	LOGGER.trace("Resetting HttpSession attached to the thread with session id {}", httpSessionevent.getSession().getId());
+            SessionTimedoutContextHolder.resetSessionAttribute();
+        }
+    }
+
+    protected HttpSessionInvalidatedEvent getHttpSessionInvalidatedEvent(SessionCacheProviderSessionListener listener) {
+    	return new HttpSessionInvalidatedEvent(listener); 
+    }
+    
+    protected void publishEvent() throws IllegalStateException {
+        ApplicationEventPublisherService.publishEvent(getHttpSessionInvalidatedEvent(this));
+    	
+    }
+    
+}
