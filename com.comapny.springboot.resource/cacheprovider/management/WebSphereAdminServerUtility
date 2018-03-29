@@ -1,0 +1,114 @@
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+import javax.management.ObjectName;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
+
+import com.company.spring.caching.util.CachingProviderErrorCodes;
+
+public class WebSphereAdminServerUtility {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebSphereAdminServerUtility.class);
+
+    private static final String ADMIN_SERVICE_FACTORY_CLASS = "com.ibm.websphere.management.AdminServiceFactory";
+
+    private static final String GET_ADMIN_SERVICE_METHOD = "getAdminService";
+
+    private static final String GET_MBEAN_FACTORY_METHOD = "getMBeanFactory";
+
+    private static final String DEACTIVATE_MBEAN_METHOD = "deactivateMBean";
+
+    private static final String GET_CELL_NAME_METHOD = "getCellName";
+
+    private static final String GET_NODE_NAME_METHOD = "getNodeName";
+
+    private static final String GET_PROCESS_NAME_METHOD = "getProcessName";
+
+    private static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
+
+    public static String getCellName() {
+        String cellName = null;
+        try {
+            Object adminService = getWebSphereAdminService();
+            Method getCellNameMethod = adminService.getClass().getMethod(GET_CELL_NAME_METHOD, new Class[0]);
+            return (String) getCellNameMethod.invoke(adminService, EMPTY_OBJECT_ARRAY);
+        } catch (Throwable e) {
+        	LOGGER.warn(MarkerFactory.getMarker(CachingProviderErrorCodes.NO_ADMIN_SERVER.getCode()), "Could not find websphere admin server, it's fine if not running on websphere. For more information, please see http://crewhub.vanguard.com/it/vpedia/Wiki%20Pages/Caching%20Provider%20FAQ.aspx#toclink7", e);
+        }
+        return cellName;
+
+    }
+
+    public static String getNodeName() {
+        String cellName = null;
+        try {
+            Object adminService = getWebSphereAdminService();
+            Method getNodeNameMethod = adminService.getClass().getMethod(GET_NODE_NAME_METHOD, new Class[0]);
+
+            return (String) getNodeNameMethod.invoke(adminService, EMPTY_OBJECT_ARRAY);
+        } catch (Throwable e) {
+        	LOGGER.warn(MarkerFactory.getMarker(CachingProviderErrorCodes.NO_ADMIN_SERVER.getCode()), "Could not find websphere admin server, it's fine if not running on websphere. For more information, please see http://crewhub.vanguard.com/it/vpedia/Wiki%20Pages/Caching%20Provider%20FAQ.aspx#toclink7", e);
+        }
+        return cellName;
+
+    }
+
+    public static String getProcessName() {
+        String cellName = null;
+        try {
+            Object adminService = getWebSphereAdminService();
+            Method getProcessNameMethod = adminService.getClass().getMethod(GET_PROCESS_NAME_METHOD, new Class[0]);
+
+            return (String) getProcessNameMethod.invoke(adminService, EMPTY_OBJECT_ARRAY);
+        } catch (Throwable e) {
+        	LOGGER.warn(MarkerFactory.getMarker(CachingProviderErrorCodes.NO_ADMIN_SERVER.getCode()), "Could not find websphere admin server, it's fine if not running on websphere. For more information, please see http://crewhub.vanguard.com/it/vpedia/Wiki%20Pages/Caching%20Provider%20FAQ.aspx#toclink7", e);
+        }
+        return cellName;
+
+    }
+
+    public static void deactivateMBean(ObjectName objectName) {
+        try {
+            Object mBeanFactory = getWebSphereMBeanFactory();
+            Method deactivateMBeanMethod = mBeanFactory.getClass().getMethod(DEACTIVATE_MBEAN_METHOD, new Class[] { ObjectName.class });
+
+            deactivateMBeanMethod.invoke(mBeanFactory, new Object[] { objectName });
+        } catch (Throwable e) {
+        	LOGGER.warn(MarkerFactory.getMarker(CachingProviderErrorCodes.COULD_NOT_REMOVE_MBEAN.getCode()), "Could not remove the MBean from WebSphere.", e);
+        }
+    }
+
+    /**
+     * Method to get the AdminServiceFactory for WebSphere JMX. This was written as a separate method in order to allow testing of the getMBeanServer
+     * method logic outside of websphere.
+     * 
+     * @return non null class object for com.ibm.websphere.management.AdminServiceFactory
+     * @throws ClassNotFoundException
+     *             if this is not running in WebSphere.
+     */
+    static Class<?> getAdminServiceFactoryClass() throws ClassNotFoundException {
+        return WebSphereAdminServerUtility.class.getClassLoader().loadClass(ADMIN_SERVICE_FACTORY_CLASS);
+    }
+
+    private static Object getWebSphereAdminService() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException {
+        Class<?> adminServiceClass = getAdminServiceFactoryClass();
+        Method getAdminServiceMethod = adminServiceClass.getMethod(GET_ADMIN_SERVICE_METHOD, new Class[0]);
+        Object adminService = getAdminServiceMethod.invoke(null, new Object[0]);
+
+        return adminService;
+    }
+
+    private static Object getWebSphereMBeanFactory() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException {
+        Class<?> adminServiceClass = getAdminServiceFactoryClass();
+        Method getMBeanFactoryMethod = adminServiceClass.getMethod(GET_MBEAN_FACTORY_METHOD, new Class[0]);
+        Object mBeanFactory = getMBeanFactoryMethod.invoke(null, new Object[0]);
+
+        return mBeanFactory;
+    }
+
+}
