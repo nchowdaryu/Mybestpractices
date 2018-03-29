@@ -1,0 +1,41 @@
+package com.company.logging.api.logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
+
+import com.vanguard.logging.api.message.Message;
+import com.vanguard.logging.api.message.MessageUtils;
+
+/**
+ * Report business driven messages to report logger.
+ * <ul>
+ * <li>Level: INFO</li>
+ * <li>Logger: ReportLogger</li>
+ * </ul>
+ * 
+ * @author uw8h
+ */
+public class ReportLogger {
+
+	private static final String REPORT = "report";
+	
+    private static final Marker REPORT_MARKER = MarkerFactory.getMarker(REPORT);
+
+    public static void report(Class<?> aComponentClass, int aMessageCode, String aMessageFormat, Object... aMessageArgs) {
+
+        Message message = MessageUtils.createMessage(aComponentClass.getName(), aMessageCode, aMessageFormat, aMessageArgs);
+        report(message);
+    }
+
+    public static void report(Message aMessage) {
+    	
+    	Logger logger = LoggerFactory.getLogger(aMessage.getComponentName());
+    	
+        if (aMessage != null) {
+        	logger.info(REPORT_MARKER, aMessage.toString());
+        }
+    }
+
+}
