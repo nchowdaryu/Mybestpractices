@@ -1,4 +1,4 @@
-package com.vanguard.logging.api.message;
+package com.company.logging.api.message;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
