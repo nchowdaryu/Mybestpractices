@@ -1,0 +1,22 @@
+import javax.servlet.http.HttpSession;
+
+import org.springframework.core.NamedThreadLocal;
+
+public class BackgroundThreadContextHolder {
+    
+    @SuppressWarnings("unchecked")
+    private static final ThreadLocal<HttpSession> sessionAttributesHolder = new NamedThreadLocal("BackgroundThreadContextHolder");
+
+    public static void resetSessionAttribute() {
+        sessionAttributesHolder.set(null);
+    }
+
+    public static void setSessionAttribute(HttpSession session) {
+        sessionAttributesHolder.set(session);
+    }
+
+    public static HttpSession getSessionAttribute() {
+        HttpSession session = (HttpSession) sessionAttributesHolder.get();
+        return session;
+    }
+}
