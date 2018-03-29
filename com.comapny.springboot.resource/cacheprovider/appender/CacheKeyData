@@ -1,0 +1,31 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+
+public class CacheKeyData {
+    
+    private String cacheEntryKeyPrefix;
+    private String overrideCacheEntryKey;
+    private ProceedingJoinPoint pjp;
+    
+    private CacheKeyData(String cacheEntryKeyPrefix, String overrideCacheEntryKey, ProceedingJoinPoint pjp) {
+        this.cacheEntryKeyPrefix = cacheEntryKeyPrefix;
+        this.overrideCacheEntryKey = overrideCacheEntryKey;
+        this.pjp = pjp;
+    }
+    
+    public static CacheKeyData valueOf(String cacheEntryKeyPrefix, String overrideCacheEntryKey,ProceedingJoinPoint pjp) {
+        return new CacheKeyData(cacheEntryKeyPrefix, overrideCacheEntryKey, pjp);
+    }
+
+    public String getCacheEntryKeyPrefix() {
+        return cacheEntryKeyPrefix;
+    }
+
+    public String getOverrideCacheEntryKey() {
+        return overrideCacheEntryKey;
+    }
+
+    public ProceedingJoinPoint getPjp() {
+        return pjp;
+    }
+
+}
