@@ -1,0 +1,36 @@
+import java.util.Collection;
+
+public interface EnhancedCacheManager {
+
+    /**
+     * Return the cache associated with the given name.
+     * @param name cache identifier (must not be {@code null})
+     * @return associated cache, or {@code null} if none is found
+     */
+    EnhancedCache getCache(String name);
+
+    /**
+     * Return a collection of the caches known by this cache manager.
+     * @return names of caches known by the cache manager.
+     */
+    Collection<String> getCacheNames();
+
+    /**
+     * Returns true only when there is a cache available for the provided name.
+     * Null and empty strings will always return false.
+     * 
+     * @param cacheName
+     * @return
+     */
+    boolean cacheExists(String cacheName);
+
+    /**
+     * Takes the provided cache configuration and destroys any data stored for that
+     * configuration.  Depending on the implementation, it may remove the associated
+     * cache or destroy a subset of the data if the cache contains multiple user's
+     * scoped information
+     * 
+     * @param cacheConfiguration
+     */
+    void destroyData(CacheConfiguration cacheConfiguration);
+}
