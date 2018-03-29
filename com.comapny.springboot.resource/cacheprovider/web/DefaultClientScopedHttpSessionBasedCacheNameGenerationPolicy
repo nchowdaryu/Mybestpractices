@@ -1,0 +1,57 @@
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
+
+import com.company.spring.caching.ClientScopedCacheNameGenerationPolicy;
+
+public class DefaultClientScopedHttpSessionBasedCacheNameGenerationPolicy implements ClientScopedCacheNameGenerationPolicy {
+
+    public static final String CLIENT_CACHE_NAME_PREFIX="CLIENT_IDENTIFIER_";
+
+    public static final String CLIENT_IDENTIFIER_ATTRIBUTE_NAME="poid";
+    
+    String cacheNamePrefix = CLIENT_CACHE_NAME_PREFIX;
+
+    String attributeName = CLIENT_IDENTIFIER_ATTRIBUTE_NAME;
+
+    protected String getCacheNamePrefix() {
+        return cacheNamePrefix;
+    }
+
+    protected String getAttributeName() {
+        return attributeName;
+    }
+
+    /**
+     * @param cacheNamePrefix
+     *            the cacheNamePrefix to set
+     */
+    @Autowired(required = false)
+    public void setCacheNamePrefix(String cacheNamePrefix) {
+        this.cacheNamePrefix = cacheNamePrefix;
+    }
+
+    /**
+     * @param attributeName
+     *            the attributeName to set
+     */
+    @Autowired(required = false)
+    public void setAttributeName(String attributeName) {
+        this.attributeName = attributeName;
+    }
+    
+    public String generateCacheName() {
+        final String clientId = getAttributeFromHttpSession(getAttributeName());
+
+        if (!StringUtils.hasText(clientId)) {
+            throw new IllegalStateException("This client scoped cache name generation policy requires http session attribute " + getAttributeName() + " to be populated upstream by application code. For more information, please see http://crewhub.vanguard.com/it/vpedia/Wiki%20Pages/Caching%20Provider%20FAQ.aspx#toclink10");
+        }
+        return getCacheNamePrefix() + clientId;
+    }
+
+    public String getAttributeFromHttpSession(String attrName) {
+        HttpSession httpSession = SessionContextHolder.getSession();
+        return (String) httpSession.getAttribute(attrName);
+    }
+}
