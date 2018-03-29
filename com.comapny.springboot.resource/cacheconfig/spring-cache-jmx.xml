@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:config="http://www.vanguard.com/schema/config"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+						http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+						http://www.vanguard.com/schema/config http://www.vanguard.com/schema/config/vanguard-config.xsd
+						http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <config:vanguard-property-placeholder moduleId="caching-provider" />
+  
+	<import resource="classpath:/META-INF/vanguard-spring-core/spring-bootstrap-jmx.xml" />
+
+	<bean id="ehJmxPublisher" class="com.company.spring.caching.ehcache.management.EhCacheJmxPublisher" init-method="init">
+		<property name="cacheManager" ref="caching-provider-cacheManager"/>
+		<property name="mbeanServer" ref="vanguard-spring-core-management-mbeanServer"/>
+	</bean>
+	
+	<bean id="_ehcacheJmxProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="properties">
+			<props>
+				<prop key="removeEhCacheMBeans">$caching-provider-{REMOVE_EHCACHE_MBEANS}</prop>
+			</props>
+		</property>
+	</bean>
+
+</beans>
