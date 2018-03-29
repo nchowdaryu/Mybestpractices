@@ -1,0 +1,145 @@
+import static com.vanguard.spring.caching.Constants.DEFAULT_METHODARGS_PLACEHOLDER;
+import static com.vanguard.spring.caching.Constants.FIELD_SEPERATOR;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.interceptor.KeyGenerator;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.TypeUtils;
+
+import com.company.spring.caching.Constants;
+import com.company.spring.caching.annotations.IncludeForCacheKey;
+
+public class PointcutParametersKeyGenerator implements KeyGenerator {
+
+	static final String ANNOTATION_SIMPLE_VALUE_METHOD = "value";
+	static final Logger LOGGER = LoggerFactory.getLogger(PointcutParametersKeyGenerator.class);
+	
+	public Object generate(Object target, Method method, Object... params) {
+		try {
+			// Have to get method from target object, since the Method argument gets the interface 
+			// method which doesn't have the @IncludeForCacheKey annotation on the parameter
+			Method targetMethod = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+			Annotation[][] parameterAnnotations = targetMethod.getParameterAnnotations();
+			String key = getKeyStringFromArgumentsWithAnnotation(params, parameterAnnotations, IncludeForCacheKey.class);
+			return key;
+		}
+		catch(NoSuchMethodException ex) {
+		    throw new IllegalStateException("The target method wasn't found in the target class:  Class:  " + target.getClass().getSimpleName() + "  Method:  " + method.getName());
+		}
+	}
+
+    String getKeyStringFromArgumentsWithAnnotation(Object[] arguments,
+    	    Annotation[][] parameterAnnotations, Class<? extends Annotation> includeArgsAnnotatedBy) {
+        	StringBuilder sb = new StringBuilder();
+        
+        	// Parameter index Counter
+        	int i = 0;
+        	for (Annotation[] annotations : parameterAnnotations) {
+        	    if (annotations.length > 0) {
+            		for (Annotation annotation : annotations) {
+            		    // Get the key value from the method argument only if
+            		    // the argument is annotated with the given annotation.
+            		    if (TypeUtils.isAssignable(includeArgsAnnotatedBy, annotation.getClass())) {
+                			Object currentArg = arguments[i];
+                			if (currentArg == null) {
+                			    throw new IllegalStateException("Cache key should not be null. Argument in " + i + " position has null value.");
+                			}
+                			String keyFetcherMethodName = determineArgumentMethodNameForKeyGeneration(
+                				includeArgsAnnotatedBy, annotation);
+                			// If no specific method is given execute the toString method.
+                			currentArg = determineSortOnArgument((IncludeForCacheKey)annotation, currentArg);			
+                			if (Constants.DEFAULT_KEY_GEN_METHOD_NAME.equals(keyFetcherMethodName)) {
+                			    useToStringValueOfArgument(sb, currentArg);
+                			} 
+                            else { // Find the specified method on the
+                			    // argument and invoke it.
+                			    useCustomMethodOnArgument(sb, currentArg, keyFetcherMethodName);
+                			}
+            		    }
+            		}
+        	    }
+        	    // Parameter index Counter
+        	    ++i;
+        	}
+        	if (sb.length() == 0) {
+        	    return DEFAULT_METHODARGS_PLACEHOLDER;
+            }
+        	return sb.substring(1, sb.length());
+        }
+    
+
+    /**
+     * @param annotation
+     * @param currentArg
+     */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+    static Object determineSortOnArgument(IncludeForCacheKey annotation, Object currentArg) {
+        
+		//Check if currentArg is of type List<? extends Comparable>, list of size > 1, and
+		//annotation attribute disableSort=false then sort (TeamTrack NGSA 02281)		
+		if( TypeUtils.isAssignable(List.class, currentArg.getClass()) ){
+            List<?> currentArgAsList = (List<?>) currentArg;
+			if( !annotation.disableSort() && currentArgAsList.size() > 1 && isFirstElementComparable(currentArgAsList)) {
+
+				//create a defensive copy, in case of immutable list
+                //since 1st element is Comparable, assume rest are too - if not the case then user should disableSort
+				List<Comparable> copyOfCurrentArgAsList = new ArrayList<Comparable>((List<Comparable>)currentArgAsList);			
+				Collections.sort(copyOfCurrentArgAsList);
+				return copyOfCurrentArgAsList;
+			}
+		}
+		return currentArg;
+	}
+    
+    static boolean isFirstElementComparable(List<?> list) {
+        return list.get(0) != null && TypeUtils.isAssignable(Comparable.class, list.get(0).getClass());
+    }
+
+    /**
+     * @param sb
+     * @param currentArg
+     * @param keyFetcherMethodName
+     */
+    static void useCustomMethodOnArgument(StringBuilder sb, Object currentArg, String keyFetcherMethodName) {
+    	LOGGER.trace("Using {} method on argument to get key on argument {}", keyFetcherMethodName, (currentArg == null) ? "null" : currentArg.getClass());
+    	Object keyValueForArgument = extractArgumentKeyGenerationValue(currentArg, keyFetcherMethodName);
+    	sb.append(FIELD_SEPERATOR).append(keyValueForArgument);
+    }
+
+    /**
+     * @param sb
+     * @param currentArg
+     */
+    static void useToStringValueOfArgument(StringBuilder sb, Object currentArg) {
+    	LOGGER.trace("Using toString method on argument to get key on argument {}", (currentArg == null) ? "null" : currentArg.getClass());
+		sb.append(FIELD_SEPERATOR).append(currentArg);
+    }
+
+    static String determineArgumentMethodNameForKeyGeneration(
+	    Class<? extends Annotation> includeArgsAnnotatedBy, Annotation annotation) {
+        
+    	// Get the handle to annotation.value() method.
+    	Method valueMethod = ReflectionUtils.findMethod(includeArgsAnnotatedBy, ANNOTATION_SIMPLE_VALUE_METHOD);
+    	
+        // Execute the value() method on the annotation.
+    	// if the annotation is used as @IncludeKey("someValue")
+    	// the following method will return the string someValue.
+    	String keyFetcherMethodName = (String) ReflectionUtils.invokeMethod(
+    		valueMethod, annotation);
+    
+    	return keyFetcherMethodName;
+    }
+    
+    static Object extractArgumentKeyGenerationValue(Object methodArgumentObj, String keyFetcherMethodName) {
+    	Method keyValueGeneratorMethod = ReflectionUtils.findMethod(methodArgumentObj.getClass(), keyFetcherMethodName);
+    	Object keyValueForArgument = ReflectionUtils.invokeMethod(keyValueGeneratorMethod, methodArgumentObj);
+    	return keyValueForArgument;
+    }    
+}
