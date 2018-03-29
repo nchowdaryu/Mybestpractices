@@ -1,4 +1,4 @@
-package com.vanguard.logging.api.message;
+package com.company.logging.api.message;
 
 /**
  * common constants used to create messages and parse messages used by logging methods.
