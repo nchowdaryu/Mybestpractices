@@ -235,3 +235,31 @@ public final class PropertyLocator {
         return propertyMap;
     }
 }
+
+import org.apache.commons.lang.StringUtils;
+
+/**
+ * Exception thrown when a property cannot be found
+ * 
+ * @author u16t
+ */
+public class PropertyNotFoundException extends RuntimeException {
+
+    private static final long serialVersionUID = -435845063953996862L;
+
+    private static final String ERROR_NO_PROPERTY_FOUND = "No property found for module [%1$s] and property name [%2$s]. ";
+
+    private String moduleId = StringUtils.EMPTY;
+
+    private String propertyName = StringUtils.EMPTY;
+
+    public PropertyNotFoundException(String moduleId, String propertyName) {
+        this.moduleId = moduleId;
+        this.propertyName = propertyName;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(ERROR_NO_PROPERTY_FOUND, moduleId, propertyName);
+    }
+}
