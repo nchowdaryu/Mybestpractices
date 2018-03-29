@@ -1,0 +1,42 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.CacheKeyAppender;
+import com.company.spring.caching.appender.CacheKeyAppenderBuilder;
+
+/**
+ * This implementation generates a key using only the parameters of the
+ * method intercepted. Does not use the target method name or the target class name.
+ * 
+ * This is activated by using the prefix configuration option of the cache annotations.
+ * @author uiak
+ * 
+ */
+@Component("pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy")
+public class PointcutMethodArgumentsCacheEntryKeyGeneratorPolicy implements CacheEntryKeyGenerationPolicy {
+
+	public String generateCacheEntryKey(Object... arguments) {
+		validateArguments(arguments);
+		ProceedingJoinPoint pjp = (ProceedingJoinPoint) arguments[0];
+		String keyprefix = (String) arguments[1];
+
+		return buildCacheEntryKey(pjp, keyprefix);
+	}
+
+	protected void validateArguments(Object... arguments) {
+		if (arguments.length < 2) {
+			throw new IllegalArgumentException("Requires ProceedingJoinPoint and key prefix as input parameters");
+        }
+
+		if (!ProceedingJoinPoint.class.isAssignableFrom(arguments[0].getClass())) {
+			throw new IllegalArgumentException(" Input argument is not of ProceedingJoinPoint type ");
+        }
+	}
+	
+	private String buildCacheEntryKey(ProceedingJoinPoint pjp, String keyprefix) {
+	    CacheKeyAppender appender = new CacheKeyAppenderBuilder().stringValue(keyprefix).methodArguments().build();
+        return appender.generateCacheKeyFromJoinPoint(pjp);
+	}
+
+}
