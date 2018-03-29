@@ -1,0 +1,101 @@
+import java.io.Serializable;
+import java.text.MessageFormat;
+import java.text.ParsePosition;
+
+import org.apache.commons.collections.Predicate;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.springframework.util.Assert;
+
+import com.company.toolbox.object.ObjectUtilz;
+
+
+public class KeyGroupIdPredicate implements Predicate, Serializable {
+    
+    private static final long serialVersionUID = -3786117555813378970L;
+    
+    private String keyGroupId;
+
+    public KeyGroupIdPredicate(String keyGroupId) {
+        Assert.hasText(keyGroupId);
+        this.keyGroupId = keyGroupId;
+    }
+
+    public boolean evaluate(Object arg0) {
+        String key = ObjectUtilz.safeCast(arg0, String.class);
+        MessageFormat format = new MessageFormat("{0}^GROUPID={1}^");
+        if (key.contains("^GROUPID=")) {
+            Object[] keyportions = format.parse(key, new ParsePosition(0));
+            String cachekeygroupId = (String) keyportions[1];
+            
+            if (cachekeygroupId.equals(keyGroupId)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+    }
+}
+
+import org.apache.commons.lang.ObjectUtils;
+
+public class ObjectUtilz {
+    
+    /**
+     * Takes the provided object and attempts to cast it to the specified Type.  If
+     * the object is null or if the object is not of the right type, the method will
+     * return null;
+     * 
+     * @param objectToCast
+     * @param type
+     * @return
+     */
+    public static <T> T safeCast(Object objectToCast, Class<T> type) {
+        T result = null;
+
+        if (objectToCast != null) {
+            if (type.isInstance(objectToCast)) {
+                result = type.cast(objectToCast);
+            }
+        }
+
+        return result;
+
+    }
+    
+    /**
+     * Takes the provided object and attempts to cast it to the specified Type.  If
+     * the object is null or if the object is not of the right type, the method will
+     * return the default value provided;
+     * 
+     * @param objectToCast
+     * @param type
+     * @param defaultValue
+     * @return
+     */
+    public static <T> T safeCastWithDefault(Object objectToCast, Class<T> type, T defaultValue) {
+        T castValue = safeCast(objectToCast, type);
+        
+        if (castValue == null) {
+            return defaultValue;
+        }
+        
+        return castValue;
+    }
+
+    /**
+     * Returns the object if it is non-null.  If the object is null, returns the defaultObject
+     * @deprecated use ObjectUtils.defaultIfNull
+     * @return
+     */
+    @Deprecated
+    public static <T> T coalesce(T object, T defaultObject) {
+        return (T) ObjectUtils.defaultIfNull(object, defaultObject);
+    }
+
+}
