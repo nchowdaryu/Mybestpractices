@@ -1,0 +1,70 @@
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.springframework.cache.CacheManager;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+import com.vanguard.spring.caching.CacheConfiguration;
+import com.vanguard.spring.caching.EnhancedCache;
+import com.vanguard.spring.caching.EnhancedCacheManager;
+
+/**
+ * Class essentially duplicated from Spring Caching so that we can add our own behavior
+ * to the caching interface.
+ * 
+ * @author uvjl
+ */
+public class CompositeEnhancedCacheManager implements CacheManager, EnhancedCacheManager {
+    
+    private List<EnhancedCacheManager> cacheManagers;
+
+    public EnhancedCache getCache(String name) {
+        Assert.hasText(name);
+        for (EnhancedCacheManager cacheManager : this.cacheManagers) {
+            EnhancedCache cache = cacheManager.getCache(name);
+            if (cache != null) {
+                return cache;
+            }
+        }
+        
+        return null;
+//        throw new RuntimeException("Could not find a cache with the name: " + name);
+    }
+
+    public Collection<String> getCacheNames() {
+        List<String> names = new ArrayList<String>();
+        for (EnhancedCacheManager manager : this.cacheManagers) {
+            names.addAll(manager.getCacheNames());
+        }
+        return Collections.unmodifiableList(names);
+    }
+
+    public void setCacheManagers(List<EnhancedCacheManager> cacheManagers) {
+        Assert.notEmpty(cacheManagers, "cacheManagers Collection must not be empty");
+        this.cacheManagers = cacheManagers;
+    }
+
+    public boolean cacheExists(String cacheName) {
+        if (StringUtils.hasText(cacheName)) {
+            for (EnhancedCacheManager cacheManager : this.cacheManagers) {
+                if (cacheManager.cacheExists(cacheName)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    public void destroyData(CacheConfiguration cacheConfiguration) {
+        Assert.notNull(cacheConfiguration);
+        
+        for (EnhancedCacheManager cacheManager : this.cacheManagers) {
+            cacheManager.destroyData(cacheConfiguration);
+        }
+    }
+
+}
