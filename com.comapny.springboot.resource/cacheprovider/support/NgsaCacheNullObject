@@ -1,0 +1,66 @@
+import org.apache.commons.collections.Predicate;
+
+import com.company.spring.caching.EnhancedCache;
+
+public class NgsaCacheNullObject implements EnhancedCache {
+
+    private static final NgsaCacheNullObject INSTANCE = new NgsaCacheNullObject();
+
+    private NgsaCacheNullObject() {
+        super();
+    }
+
+    public static EnhancedCache getInstance() {
+        return INSTANCE;
+    }
+
+    public static EnhancedCache getCache() {
+        return INSTANCE;
+    }
+
+    public String getName() {
+        return "NullCache";
+    }
+
+    public Object getNativeCache() {
+        return null;
+    }
+
+    public ValueWrapper get(Object key) {
+        return null;
+    }
+
+    public void put(Object key, Object value) {
+        // Do nothing
+    }
+
+    public void evict(Object key) {
+        // Do nothing
+    }
+
+    public void clear() {
+        // Do nothing
+    }
+
+    public void removeMatchingKeys(Predicate predicate) {
+        // Do nothing
+    }
+
+    public boolean isBlocking() {
+        return false;
+    }
+
+    @Override
+    public void validateObjectForCache(Object cacheEntry) {
+    }
+
+	@Override
+	public <T> T get(Object key, Class<T> type) {
+		return null;
+	}
+
+	@Override
+	public ValueWrapper putIfAbsent(Object key, Object value) {
+		return null;
+	}
+}
