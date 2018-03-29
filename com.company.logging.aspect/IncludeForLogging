@@ -1,0 +1,25 @@
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Annotation used to indicate that the marked parameter should be included in the entrance log messages.
+ * Both the marked class and the method to be called must be public, so Spring AOP can invoke it.
+ * 
+ * @author u16t
+ */
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+public @interface IncludeForLogging {
+    
+    /**
+     * @return String method name that will be invoked on the annotated parameter (must be public, and on a public class)
+     */
+    String value() default "toString";
+    
+}
