@@ -1,0 +1,148 @@
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.company.process.util.Misc;
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchConstants;
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchErrorMsgConstants;
+import com.company.service.application.ltqtnotification.external.batch.pojo.LTQTBatchErrorInfo;
+import com.company.service.application.ltqtnotification.external.batch.pojo.NotificationDetailsRawData;
+import com.company.service.application.ltqtnotification.external.batch.validator.AccountOrFINorMasterNumberValidator;
+import com.company.service.application.ltqtnotification.external.batch.validator.AlternateContactInformationValidator;
+import com.company.service.application.ltqtnotification.external.batch.validator.DollarShareValueValidator;
+import com.company.service.application.ltqtnotification.external.batch.validator.FundCusipTickerValidator;
+import com.company.service.application.ltqtnotification.external.batch.validator.LongTermInvestmentValidator;
+import com.company.service.application.ltqtnotification.external.batch.validator.NSCCIDvalidator;
+import com.company.service.application.ltqtnotification.external.batch.validator.TradeDateValidator;
+import com.company.service.application.ltqtnotification.shared.enums.LTQTTransactionType;
+
+@Component
+public class LTQTBatchRecordValidator {
+	
+	@Autowired
+	DollarShareValueValidator aDollarShareValueValidator;
+	
+	@Autowired
+	FundCusipTickerValidator aFundCusipTickerValidator;
+	
+	@Autowired
+	NSCCIDvalidator aNsccIDvalidator;
+	
+	@Autowired
+	AccountOrFINorMasterNumberValidator aAccountOrFINorMasterNumberValidator;
+	
+	@Autowired
+	AlternateContactInformationValidator aAlternateContactInformationValidator;
+	
+	@Autowired
+	LongTermInvestmentValidator aLongTermInvestmentValidator;
+	
+	@Autowired
+	TradeDateValidator aTradeDateValidator;
+	
+	
+	public List<LTQTBatchErrorInfo> validateRecord(
+			NotificationDetailsRawData bulkUploadRawData) {
+		List<LTQTBatchErrorInfo> errorList = null;
+		Validator validator;
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		validator = factory.getValidator();
+
+		Set<ConstraintViolation<NotificationDetailsRawData>> constraintViolations = validator.validate(bulkUploadRawData);
+		Set<String> errorSet = new HashSet<String>();
+		if (Misc.isNotNullAndEmpty(constraintViolations)) {
+
+			Iterator<ConstraintViolation<NotificationDetailsRawData>> violationItr = constraintViolations.iterator();
+			while (violationItr.hasNext()) {
+				errorSet.add(violationItr.next().getMessage());
+			}
+		}
+		// Validating other values which are not included in constraint validation.
+		errorSet = validateComibnationRecord(bulkUploadRawData, errorSet);
+		Iterator<String> errorSetItr = errorSet.iterator();
+		while (errorSetItr.hasNext()) {
+			String errorText = errorSetItr.next();
+			errorList = populateErrorResp(errorText, errorList,
+					bulkUploadRawData);
+		}
+
+		return errorList;
+	}
+	
+	public List<LTQTBatchErrorInfo> validatePortalRecord(
+			NotificationDetailsRawData bulkUploadRawData,
+			List<LTQTBatchErrorInfo> errorList) {
+		boolean containsTransactionTypeErrorCode = false;
+		if(errorList != null){
+			for(LTQTBatchErrorInfo aLTQTBatchErrorInfo : errorList){
+				if (aLTQTBatchErrorInfo.getErrorText() != null
+						&& LTQTBatchErrorMsgConstants.TRANSACTION_TYP_INVALID
+						.equalsIgnoreCase(aLTQTBatchErrorInfo
+								.getErrorText())) {
+					containsTransactionTypeErrorCode = true;
+				}
+			}
+		}
+		if(!containsTransactionTypeErrorCode && !(LTQTTransactionType.BUY.getValue().equalsIgnoreCase(bulkUploadRawData.getTransactionType())
+				|| LTQTTransactionType.SELL.getValue().equalsIgnoreCase(bulkUploadRawData.getTransactionType()))){
+			errorList = populateErrorResp(LTQTBatchErrorMsgConstants.TRANSACTION_TYP_INVALID, errorList,bulkUploadRawData);
+		}
+		
+		return errorList;
+	}
+	
+	public Set<String> validateComibnationRecord(NotificationDetailsRawData bulkUploadRawData, Set<String> errorSet) {
+		errorSet.add(aTradeDateValidator.isValid(bulkUploadRawData));
+		errorSet.add(aDollarShareValueValidator.isValid(bulkUploadRawData));
+		errorSet.add(aFundCusipTickerValidator.isValid(bulkUploadRawData));
+		errorSet.add(aNsccIDvalidator.isValid(bulkUploadRawData));
+		errorSet.add(aAccountOrFINorMasterNumberValidator.isValid(bulkUploadRawData));
+		errorSet.add(aAlternateContactInformationValidator.isValid(bulkUploadRawData));
+		errorSet.add(aLongTermInvestmentValidator.isValid(bulkUploadRawData));
+		//Removed underlying client validation
+		// removed Primay contact validation
+		return errorSet;
+		
+	}
+
+	private List<LTQTBatchErrorInfo> populateErrorResp(String error,List<LTQTBatchErrorInfo> errorList,NotificationDetailsRawData bulkUploadRawData) {
+		// need to populate error object as per requirement
+		if(error != null ){
+			LTQTBatchErrorInfo batchErrorInfo = new LTQTBatchErrorInfo();
+			if(bulkUploadRawData.getRecordID() != null){
+				batchErrorInfo.setBatchDetailId(new BigDecimal(bulkUploadRawData.getRecordID()));
+			}
+			batchErrorInfo.setErrorText(error);
+			batchErrorInfo.setErrorTypeCode(LTQTBatchConstants.TYPE_CODE_ERROR);
+			if(errorList == null){
+				errorList = new ArrayList<LTQTBatchErrorInfo>();
+			}
+			errorList.add(batchErrorInfo);
+		}
+			
+		
+		return errorList;
+	}
+	
+	
+
+}
+
+public static boolean isNullOrEmpty(Collection objCollection) {
+		boolean retVal = false;
+		if (null == objCollection || 0 == objCollection.size()) {
+			retVal = true;
+		}
+		return retVal;
+	}
