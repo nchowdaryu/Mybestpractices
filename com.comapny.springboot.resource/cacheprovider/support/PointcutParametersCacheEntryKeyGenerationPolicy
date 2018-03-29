@@ -1,0 +1,117 @@
+import static com.vanguard.spring.caching.Constants.DEFAULT_METHODARGS_PLACEHOLDER;
+import static com.vanguard.spring.caching.Constants.DEFAULT_METHODNAME_PLACEHOLDER;
+import static com.vanguard.spring.caching.Constants.DEFAULT_TARGET_PLACEHOLDER;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.CacheKeyAppender;
+import com.company.spring.caching.appender.CacheKeyAppenderBuilder;
+
+/**
+ * This implementation of CacheEntryKeyGenerationPolicy uses the intercepted classname, name of the method intercepted and all of the arguments to
+ * generate a cache entry key.
+ * 
+ * <pre>
+ * A sample configuration shown.
+ * 
+ *  &lt;!-- Uses component scaned key generator --&gt;
+ *  &lt;bean id=&quot;fundsCacheConfiguration&quot; class=&quot;com.vanguard.spring.caching.support.DynamicCacheConfiguration&quot;&gt;
+ *  &lt;!-- This should be same as the cacheName attribute used for cache definition above. --&gt;
+ *  &lt;constructor-arg ref=&quot;fundsCacheFactory&quot; /&gt;
+ *  &lt;constructor-arg&gt;
+ *  &lt;bean class=&quot;com.vanguard.spring.caching.support.ThreadscopedCacheNameGeneratorPolicy&quot;&gt;&lt;/bean&gt;
+ *  &lt;/constructor-arg&gt;
+ *  &lt;constructor-arg ref=&quot;pointcutParametersCacheEntryKeyGenerationPolicy&quot; /&gt;
+ *  &lt;/bean&gt;
+ * </pre>
+ * 
+ * @author uiak
+ * 
+ */
+@Component("pointcutParametersCacheEntryKeyGenerationPolicy")
+public class PointcutParametersCacheEntryKeyGenerationPolicy implements CacheEntryKeyGenerationPolicy {
+
+    private boolean useMethodName = true;
+
+    private boolean useTargetClassName = true;
+
+    private boolean useMethodArguments = true;
+
+    PointcutParametersCacheEntryKeyGenerationPolicy() {
+        this(true, true, true);
+    }
+
+    PointcutParametersCacheEntryKeyGenerationPolicy(boolean useTargetClassName, boolean useMethodName, boolean useMethodArguments) {
+        if (useMethodName || useTargetClassName || useMethodArguments) {
+            this.useMethodArguments = useMethodArguments;
+            this.useTargetClassName = useTargetClassName;
+            this.useMethodName = useMethodName;
+        } else {
+            throw new IllegalStateException("Invalid configuration of key generator.. needs to use atleast one of the point cut attributes...");
+        }
+    }
+
+    public String generateCacheEntryKey(Object... arguments) {
+
+        validateArguments(arguments);
+
+        CacheKeyAppender appender = generateAppenders();
+        
+        ProceedingJoinPoint pjp = (ProceedingJoinPoint) arguments[0];
+        
+        return appender.generateCacheKeyFromJoinPoint(pjp);
+    }
+
+    private CacheKeyAppender generateAppenders() {
+        CacheKeyAppenderBuilder builder = new CacheKeyAppenderBuilder();
+        
+        
+        if (shouldUseTargetClassName()) {
+            builder.className();
+        } else {
+            builder.stringValue(DEFAULT_TARGET_PLACEHOLDER);
+        }
+        if (shouldUseMethodName()) {
+            builder.methodName();
+        } else {
+            builder.stringValue(DEFAULT_METHODNAME_PLACEHOLDER);
+        }
+        if (shouldUseMethodArguments()) {
+            builder.methodArguments();
+        } else {
+            builder.stringValue(DEFAULT_METHODARGS_PLACEHOLDER);
+        }
+        return builder.build();
+    }
+
+    public boolean shouldUseTargetClassName() {
+        return useTargetClassName;
+    }
+
+    public boolean shouldUseMethodArguments() {
+        return useMethodArguments;
+    }
+
+    public boolean shouldUseMethodName() {
+        return useMethodName;
+    }
+
+    protected void validateArguments(Object... arguments) {
+        if (arguments.length > 1) {
+            throw new IllegalArgumentException("Requires ProceedingJoinPoint as input parameter");
+        }
+        if (!ProceedingJoinPoint.class.isAssignableFrom(arguments[0].getClass())) {
+            throw new IllegalArgumentException(" Input argument is not of ProceedingJoinPoint type ");
+        }
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+    }
+    
+}
