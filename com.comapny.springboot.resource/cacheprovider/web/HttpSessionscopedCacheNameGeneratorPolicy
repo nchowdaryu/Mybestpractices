@@ -1,0 +1,21 @@
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheNameGenerationPolicy;
+import com.company.spring.caching.Constants;
+
+/**
+ * @author uiak
+ * 
+ */
+@Component("httpSessionscopedCacheNameGeneratorPolicy")
+public class HttpSessionscopedCacheNameGeneratorPolicy implements CacheNameGenerationPolicy {
+
+    public String generateCacheName() {
+        return buildCachNameForSessionId(SessionContextHolder.getSession().getId());
+    }
+
+    public String buildCachNameForSessionId(String sessionid) {
+        return Constants.HTTPSESSION_CACHNAME_PREFIX + '_' + sessionid;
+    }
+
+}
