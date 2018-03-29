@@ -1,0 +1,46 @@
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.Ordered;
+import org.springframework.util.Assert;
+
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.EnhancedCacheManager;
+import com.company.spring.core.aspects.AspectOrder;
+
+/**
+ * @author uiak
+ * 
+ */
+public class AbstractCachingInterceptor implements InitializingBean, Ordered {
+
+    protected EnhancedCacheManager cacheManager;
+
+    protected AspectOrder cacheEntryAspectOrder = AspectOrder.CACHING;
+
+    protected int cachFlushAspectOrder = cacheEntryAspectOrder.getOrder() + 2;
+
+    protected int cachEntryFlushAspectOrder = cacheEntryAspectOrder.getOrder() + 1;
+
+    protected CacheEntryKeyGenerationPolicy pointcutMethodArgumentsOnlyCacheEntryKeyGeneratorPolicy;
+
+    @Autowired
+    AbstractCachingInterceptor(@Qualifier("cacheManager")
+            EnhancedCacheManager cacheManager, @Qualifier("pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy")
+            CacheEntryKeyGenerationPolicy pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy) {
+        this.cacheManager = cacheManager;
+        this.pointcutMethodArgumentsOnlyCacheEntryKeyGeneratorPolicy = pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy;
+    }
+
+    public int getOrder() {
+        return cacheEntryAspectOrder.getOrder();
+    }
+
+    /**
+     * Checks if required attributes are provided.
+     */
+    public void afterPropertiesSet() {
+        Assert.notNull(cacheManager, "A cache manager is required.");
+        Assert.notNull(pointcutMethodArgumentsOnlyCacheEntryKeyGeneratorPolicy, "Prefix and pointcut method argument based key generator is required");
+    }
+}
