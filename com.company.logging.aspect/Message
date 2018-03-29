@@ -1,0 +1,60 @@
+package com.vanguard.logging.api.message;
+
+import java.io.Serializable;
+
+/**
+ * Class to wrap a log message so it can easily translated into proper log format required by Vanguard's logging server also known as HVLM.
+ * 
+ * <p>
+ * Implementations of this interface must also implement toString() method as well since this is used by standard loggers such as log4j.
+ * 
+ * <p>
+ * Use {@link MessageUtils} to generate Message for general purpose diagnostic logging.
+ * 
+ * @author uw8h
+ */
+public interface Message extends Serializable {
+
+    /**
+     * The error code associated with the message. The error code is should follow Vanguard logging best practices.
+     * 
+     * @return a positive integer indicating error code if error code is defined or
+     *         {@value com.vanguard.logging.api.message.ErrorCodeConstants#CODE_UNDEFINED} if it is not defined.
+     */
+    int getErrorCode();
+
+    /**
+     * Message used by Vanguard custom logging implementations to retrieve fully rendered message.
+     * 
+     * @return String containing rendered message or blank string if message has not been provided.
+     */
+    String getMessage();
+
+    /**
+     * Method to retrive and optional component name. If getComponentName returns non null or blank String logging implemention will use this
+     * componentName inplace of the logger.
+     * 
+     * @return String representing the component name, usually the classname of calling method. Use blank or null if the loggerName should be used.
+     */
+    String getComponentName();
+
+    /**
+     * Use by standard loggers such as log4j to convert the message to a string.
+     * 
+     * <p>
+     * Example toString
+     * <li>
+     * <ul>
+     * Code and comp are provided: {@code comp=MyClass|code=2070500|msg=New Instance of Preloader Created}
+     * </ul>
+     * <ul>
+     * Code is not provided: {@code comp=|code=|msg=New Instance of Preloader Created}
+     * </ul>
+     * <ul>
+     * Message is blank and Code is provided: {@code code=2070500|msg=}</li>
+     * 
+     * @return String version of message including error code when provided.
+     * 
+     */
+    String toString();
+}
