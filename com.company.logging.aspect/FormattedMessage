@@ -1,0 +1,202 @@
+package com.company.logging.api.message;
+
+import java.io.IOException;
+import java.io.ObjectInputStream.GetField;
+import java.io.ObjectOutputStream.PutField;
+import java.util.Formatter;
+import java.util.IllegalFormatException;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang.StringUtils;
+
+/**
+ * The FormattedMessage is used to generate logs that contain dynamic data that needs to be incorporated into a format String. The format string
+ * should follow {@link Formatter} rules.
+ * 
+ * <p>
+ * This class provides the backing to the {@link MessageUtils} static methods. The full String to log will not be fully rendered until toString or
+ * getMessage is called.
+ * 
+ * @author uw8h
+ */
+class FormattedMessage implements Message {
+
+    /**
+     * 
+     */
+    private static final String MESSAGE_FORMAT_FIELD_NAME = "messageFormat";
+
+    /**
+     * 
+     */
+    private static final String ERROR_CODE_FIELD_NAME = "errorCode";
+
+    /**
+     * 
+     */
+    private static final String COMPONENT_NAME_FIELD_NAME = "componentName";
+
+    /**
+     * serialization id.
+     */
+    private static final long serialVersionUID = 1L;
+
+    private int errorCode;
+
+    /**
+     * The messageArguments may or may not be serializabled. To handle this the arguments and format are merged together and stored in message format.
+     */
+    transient private Object[] messageArguments;
+
+    /**
+     * When the object is serialized the messageFormat and messageArguments will be merged into just a messageFormat field.
+     */
+    private String messageFormat;
+
+    /**
+     * Optional name of the component logging the message.
+     */
+    private String componentName;
+
+    /**
+     * Create a default diagnostic message with the following defaults:
+     * 
+     * <ul>
+     * <li>errorCode=-1</li>
+     * <li>messageFormat=""</li>
+     * <li>messageArguments=null</li>
+     * </ul>
+     */
+    public FormattedMessage() {
+        errorCode = ErrorCodeConstants.CODE_UNDEFINED;
+        messageFormat = StringUtils.EMPTY;
+        componentName = StringUtils.EMPTY;
+        messageArguments = null;
+    }
+
+    /**
+     * @param anErrorCode
+     *            the errorCode to set
+     */
+    public final void setErrorCode(int anErrorCode) {
+
+        if (ErrorCodeConstants.ALLOWED_ERROR_CODE_RANGE.containsInteger(anErrorCode)) {
+            errorCode = anErrorCode;
+        } else {
+            errorCode = ErrorCodeConstants.CODE_UNDEFINED;
+        }
+    }
+
+    public String getComponentName() {
+        return componentName;
+    }
+
+    /**
+     * @param componentName
+     *            the componentName to set
+     */
+    public final void setComponentName(String aComponentName) {
+        componentName = StringUtils.stripToEmpty(aComponentName);
+    }
+
+    /**
+     * @param anMessageArguments
+     *            the messageArguments to set
+     */
+    public final void setMessageArguments(Object... anMessageArguments) {
+        messageArguments = anMessageArguments;
+    }
+
+    /**
+     * @param anMessageFormat
+     *            the messageFormat to set
+     */
+    public final void setMessageFormat(String anMessageFormat) {
+        messageFormat = StringUtils.stripToEmpty(anMessageFormat);
+    }
+
+    /**
+     * @returns the stored error code in accordance with {@link Message#getErrorCode()} interface.
+     */
+    public int getErrorCode() {
+        return errorCode;
+    }
+
+    /**
+     * Provides fully rendered method according to the following rules.
+     * <ul>
+     * <li><code>String.format(messageFormat,messageArguments)</code>, when both messageFormat and messageArguments are provided.</li>
+     * <li><code>messageFormat</code>, when only message format is provided.</li>
+     * <li><code>messageFormat Details {messageArguments}</code>, when messageFormat is invalid.</li>
+     * </ul>
+     * 
+     * @returns a non null message as defined by {@link Message#getErrorCode()} interface.
+     */
+    public String getMessage() {
+        StringBuilder sb = new StringBuilder();
+        appendMessage(sb);
+        return sb.toString();
+    }
+
+    /**
+     * @return message in format defined by {@link Message#toString()}
+     **/
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        appendMessage(sb);
+        return sb.toString();
+    }
+
+    private void appendMessage(StringBuilder sb) {
+        if (ArrayUtils.isEmpty(messageArguments)) {
+            appendMessageWithoutFormat(sb);
+            return;
+        }
+
+        Formatter formatter = new Formatter(sb);
+        final int start = sb.length();
+
+        try {
+            // Since StringBuilder does not implement closable or flushable,
+            // calls to flush and close do nothing.
+            formatter.format(messageFormat, messageArguments);
+        } catch (IllegalFormatException ex) {
+            if (start < sb.length()) {
+                sb.delete(start, sb.length());
+            }
+            appendMessageWithoutFormat(sb);
+        }
+        formatter.close();
+    }
+
+    /**
+     * In order to prevent logging from failing just because someone did not test a log message provide a fall back method to generate the message.
+     * 
+     * @param sb
+     *            to add default message to must not be null.
+     */
+    private void appendMessageWithoutFormat(StringBuilder sb) {
+        sb.append(messageFormat);
+        if (!ArrayUtils.isEmpty(messageArguments)) {
+            sb.append(" Details ");
+            sb.append(ArrayUtils.toString(messageArguments));
+        }
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        PutField putFields = out.putFields();
+        putFields.put(ERROR_CODE_FIELD_NAME, errorCode);
+        putFields.put(MESSAGE_FORMAT_FIELD_NAME, getMessage());
+        putFields.put(COMPONENT_NAME_FIELD_NAME, componentName);
+        out.writeFields();
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        GetField getFields = in.readFields();
+        errorCode = getFields.get(ERROR_CODE_FIELD_NAME, ErrorCodeConstants.CODE_UNDEFINED);
+        componentName = ObjectUtils.toString(getFields.get(COMPONENT_NAME_FIELD_NAME, StringUtils.EMPTY));
+        messageFormat = ObjectUtils.toString(getFields.get(MESSAGE_FORMAT_FIELD_NAME, StringUtils.EMPTY));
+    }
+}
