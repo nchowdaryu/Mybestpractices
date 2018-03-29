@@ -1,0 +1,283 @@
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+import javax.validation.constraints.Size;
+
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchErrorMsgConstants;
+import com.company.service.application.ltqtnotification.external.batch.validator.constraint.ValidValues;
+import com.company.service.application.ltqtnotification.shared.enums.BatchSearchIndicator;
+import com.company.service.application.ltqtnotification.shared.enums.LTQTProcessingMethods;
+import com.company.service.application.ltqtnotification.shared.enums.LTQTTransactionType;
+import com.company.service.application.ltqtnotification.shared.enums.NotificationTradingChannel;
+import com.company.service.application.ltqtnotification.shared.enums.TradeAmountIndicatorType;
+import com.company.service.application.ltqtnotification.util.LTQTNotificationApplicationConstants;
+import com.company.validator.constraints.NotEmpty;
+import com.company.validator.constraints.POID;
+import com.company.validator.constraints.SafeString;
+
+
+
+
+public class NotificationDetailsRawData extends NotificationContactDetailsRawData implements Serializable{
+
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.RECORD_TYP_REQ)
+	@ValidValues(allowedValues ="TXD" , message = LTQTBatchErrorMsgConstants.RECORD_TYP_INVALID)
+	String recordType;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.FILE_ID_REQ)
+	String fileID;
+
+
+	String recordID;
+
+	String notificationID;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.TRANSACTION_TYP_REQ)
+	@ValidValues(allowedValues = LTQTTransactionType.ALLOWED_VALUES,message = LTQTBatchErrorMsgConstants.TRANSACTION_TYP_INVALID)
+	String transactionType;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.TRADE_DATE_REQ)
+	String tradeDate;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.TRADE_AMNT_IND_REQ)
+	@ValidValues(allowedValues = TradeAmountIndicatorType.ALLOWED_VALUES, message = LTQTBatchErrorMsgConstants.TRADE_AMNT_IND_INVALID)
+	String tradeAmountIndicator;
+
+
+	//class level -DollarShareValueValidator
+	String dollarAmount;
+
+
+	//class level -DollarShareValueValidator
+	String numberOfShares;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.FUND_CUSIP_TICKER_REQ)
+	//class level - FundCusipTickerValidator
+	String fundOrCUSIPOrTicker;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.ACCOUNT_TYP_REQ)
+	@ValidValues(allowedValues = BatchSearchIndicator.ALLOWED_VALUES , message = LTQTBatchErrorMsgConstants.ACCOUNT_TYP_INVALID)
+	String accountTypeIndicator;
+
+
+	//class level
+	String aNSCCID;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.ACCOUNT_FIN_MASTER_REQ)
+	@ValidValues(notAllowedValues = LTQTBatchErrorMsgConstants.NOT_ALLOWED_CHARS , message = LTQTBatchErrorMsgConstants.ACCOUNT_FIN_MASTER_INVALID)
+	//class level
+	String accountOrFINOrMasterNo;
+
+
+
+	String reportingClient;
+
+	String tradingFirm;
+
+	@Size(max = 40 , message = LTQTBatchErrorMsgConstants.UNDERLYING_CLNT_INVALID)
+	@ValidValues(notAllowedValues = LTQTBatchErrorMsgConstants.NOT_ALLOWED_CHARS, message = LTQTBatchErrorMsgConstants.UNDERLYING_CLNT_INVALID)
+	String underlyingClient;
+
+	@ValidValues(notAllowedValues = LTQTBatchErrorMsgConstants.NOT_ALLOWED_CHARS, message = LTQTBatchErrorMsgConstants.CMNTS_INVALID)
+	@Size(max = 500 , message = LTQTBatchErrorMsgConstants.CMNTS_INVALID)
+	String comments;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.TRADE_CHANNEL_REQ)
+	@ValidValues(allowedValues = NotificationTradingChannel.ALLOWED_VALUES, message = LTQTBatchErrorMsgConstants.TRADE_CHANNEL_INVALID)
+	String tradingChannel ;
+
+	@NotEmpty(message = LTQTBatchErrorMsgConstants.PRCS_MTHD_REQ)
+	@ValidValues(allowedValues = LTQTProcessingMethods.ALLOWED_VALUES, message = LTQTBatchErrorMsgConstants.PRCS_MTHD_INVALID)
+	String processingMethod;
+
+	@ValidValues(allowedValues = "YES,NO", message = LTQTBatchErrorMsgConstants.LNG_TERM_INVESTMNT_INVALID)
+	String longTermInvestment;
+
+	private String preProcessCustomParam;
+
+	private BigDecimal batchDetailId;
+
+	@POID
+	private long assoiciatedPoid;
+
+	@SafeString
+	private String associateUserId;
+
+	private String uploadSource;
+
+	public String getRecordType() {
+		return recordType;
+	}
+	public void setRecordType(String recordType) {
+		this.recordType = recordType;
+	}
+	public String getFileID() {
+		return fileID;
+	}
+	public void setFileID(String fileID) {
+		this.fileID = fileID;
+	}
+	public String getRecordID() {
+		return recordID;
+	}
+	public void setRecordID(String recordID) {
+		this.recordID = recordID;
+	}
+	public String getTransactionType() {
+		return transactionType;
+	}
+	public void setTransactionType(String transactionType) {
+		this.transactionType = transactionType;
+	}
+	public String getNotificationID() {
+		return notificationID;
+	}
+	public void setNotificationID(String notificationID) {
+		this.notificationID = notificationID;
+	}
+	public String getTradeDate() {
+		return tradeDate;
+	}
+	public void setTradeDate(String tradeDate) {
+		this.tradeDate = tradeDate;
+	}
+	public String getTradeAmountIndicator() {
+		return tradeAmountIndicator;
+	}
+	public void setTradeAmountIndicator(String tradeAmountIndicator) {
+		this.tradeAmountIndicator = tradeAmountIndicator;
+	}
+	public String getDollarAmount() {
+		return dollarAmount;
+	}
+	public void setDollarAmount(String dollarAmount) {
+		this.dollarAmount = dollarAmount;
+	}
+	public String getNumberOfShares() {
+		return numberOfShares;
+	}
+	public void setNumberOfShares(String numberOfShares) {
+		this.numberOfShares = numberOfShares;
+	}
+	public String getFundOrCUSIPOrTicker() {
+		return fundOrCUSIPOrTicker;
+	}
+	public void setFundOrCUSIPOrTicker(String fundOrCUSIPOrTicker) {
+		this.fundOrCUSIPOrTicker = fundOrCUSIPOrTicker;
+	}
+	public String getAccountTypeIndicator() {
+		return accountTypeIndicator;
+	}
+	public void setAccountTypeIndicator(String accountTypeIndicator) {
+		this.accountTypeIndicator = accountTypeIndicator;
+	}
+	public String getNSCCID() {
+		return aNSCCID;
+	}
+	public void setNSCCID(String nSCCID) {
+		aNSCCID = nSCCID;
+	}
+	public String getAccountOrFINOrMasterNo() {
+		return accountOrFINOrMasterNo;
+	}
+	public void setAccountOrFINOrMasterNo(String accountOrFINOrMasterNo) {
+		this.accountOrFINOrMasterNo = accountOrFINOrMasterNo;
+	}
+
+
+	public String getReportingClient() {
+		return reportingClient;
+	}
+	public void setReportingClient(String reportingClient) {
+		this.reportingClient = reportingClient;
+	}
+	public String getTradingFirm() {
+		return tradingFirm;
+	}
+	public void setTradingFirm(String tradingFirm) {
+		this.tradingFirm = tradingFirm;
+	}
+	public String getUnderlyingClient() {
+		return underlyingClient;
+	}
+	public void setUnderlyingClient(String underlyingClient) {
+		// Added to truncate for Fidelity EXTR and INTR uploads
+		if(underlyingClient != null && underlyingClient.length() > LTQTNotificationApplicationConstants.UNDERLYINGCLIENT_MAX_LENGTH){
+			this.underlyingClient = underlyingClient.substring(0, LTQTNotificationApplicationConstants.UNDERLYINGCLIENT_MAX_LENGTH);
+		}else{
+			this.underlyingClient = underlyingClient;
+		}
+		
+	}
+	public String getComments() {
+		return comments;
+	}
+	public void setComments(String comments) {
+		// Added to truncate for Fidelity EXTR and INTR uploads		
+		if(comments != null && comments.length() > LTQTNotificationApplicationConstants.COMMENT_MAX_LENGTH){
+			this.comments = comments.substring(0, LTQTNotificationApplicationConstants.COMMENT_MAX_LENGTH);
+		}else{
+			this.comments = comments;
+		}
+	}
+	public String getTradingChannel() {
+		return tradingChannel;
+	}
+	public void setTradingChannel(String tradingChannel) {
+		this.tradingChannel = tradingChannel;
+	}
+	public String getProcessingMethod() {
+		return processingMethod;
+	}
+	public void setProcessingMethod(String processingMethod) {
+		this.processingMethod = processingMethod;
+	}
+	public String getaNSCCID() {
+		return aNSCCID;
+	}
+	public void setaNSCCID(String aNSCCID) {
+		this.aNSCCID = aNSCCID;
+	}
+	public String getLongTermInvestment() {
+		return longTermInvestment;
+	}
+	public void setLongTermInvestment(String longTermInvestment) {
+		this.longTermInvestment = longTermInvestment;
+	}
+	public String getPreProcessCustomParam() {
+		return preProcessCustomParam;
+	}
+	public void setPreProcessCustomParam(String preProcessCustomParam) {
+		this.preProcessCustomParam = preProcessCustomParam;
+	}
+	public BigDecimal getBatchDetailId() {
+		return batchDetailId;
+	}
+	public void setBatchDetailId(BigDecimal batchDetailId) {
+		this.batchDetailId = batchDetailId;
+	}
+	public long getAssoiciatedPoid() {
+		return assoiciatedPoid;
+	}
+	public void setAssoiciatedPoid(long assoiciatedPoid) {
+		this.assoiciatedPoid = assoiciatedPoid;
+	}
+	public String getAssociateUserId() {
+		return associateUserId;
+	}
+	public void setAssociateUserId(String associateUserId) {
+		this.associateUserId = associateUserId;
+	}
+	public String getUploadSource() {
+		return uploadSource;
+	}
+	public void setUploadSource(String uploadSource) {
+		this.uploadSource = uploadSource;
+	}
+}
