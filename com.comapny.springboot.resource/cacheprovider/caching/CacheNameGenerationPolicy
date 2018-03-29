@@ -1,0 +1,12 @@
+/**
+ * This interface is used by Dynamic cache creation factory
+ * to generate the cache name during runtime instead of using pre-configured cache names.
+ * 
+ * Eg. To generate cache name based on current thread or current user session id.
+ * @author uiak
+ * 
+ */
+public interface  {
+
+    public String generateCacheName();
+}
