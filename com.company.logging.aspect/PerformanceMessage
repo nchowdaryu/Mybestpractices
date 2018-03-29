@@ -1,0 +1,79 @@
+import com.vanguard.logging.api.message.Message;
+
+/**
+ * Performance data about an operation executed on a remote data source or remote system.
+ * 
+ * @author uw8h
+ */
+public interface PerformanceMessage extends Message {
+
+	// For consumers like the slf4j to HVLM binding that need to parse out the elapsed time from the String message
+    public static final String ELAPSED_TIME_PREFIX = "elapsedTime=";
+	
+    /**
+     * A string representation of the software component that is being monitored. This is usually the name of the class that is being monitored.
+     * 
+     * <p>
+     * <b>Example:</b>com.vanguard.sample.dao.SampleStoredProcedure
+     * 
+     * @return A string representation of the software component. MAY NOT be NULL.
+     */
+    String getComponentName();
+
+    /**
+     * The name of the logical operation on the system. Often this will be a stored procedure name or a description of the logical operation (if going
+     * to remote service (like CashEdge). MAY NOT be NULL.
+     * 
+     * <p>
+     * <b>Example:</b>CINSP001
+     * 
+     * @return The name of the logical operation on the system, MAY NOT be NULL.
+     */
+    String getOperation();
+
+    /**
+     * The remote data source or remote system providing the data. Can also be something local like "EspressCharts". Coordinate with your development
+     * group so everybody uses the same names for these. May not be NULL.
+     * 
+     * <p>
+     * <b>Examples:</b>VAST, VOICE, PersonOrg, CashEdge
+     * </p>
+     * 
+     * @return The remote data source or remote system providing the data. MAY NOT be NULL.
+     */
+    String getSystem();
+
+    /**
+     * A non sensitive value that can tie multiple IO Performance Events together. Preferably a client id being used for DB access. This information
+     * is used to help focus a performance problem down to a specific Vanguard client.
+     * 
+     * <p>
+     * The correlationId is optional. It is used in cases where a user is not logged on or the logged user is a Vanguard associate accessing data for
+     * a client.
+     * </p>
+     * 
+     * <p>
+     * WARNING: The correlationID should never contain sensitive data such as SSN
+     * 
+     * @return correlationId used to tie together event. Use NULL or BLANK if a correlation id is not supplied.
+     */
+    String getCorrelationId();
+
+    /**
+     * The total elapsed time for to execute the operation on the system.
+     * 
+     * <p>
+     * <b>Example calculation:</b>
+     * </p>
+     * 
+     * <pre>
+     *     long timeStart = System.currentTimeMillis()
+     *     .. stored procedure call here...
+     *     long timeElapsed = System.currentTimeMillis() - timeStart ;
+     * </pre>
+     * 
+     * @return integer representing total elapsed times for the execute. MUST BE 0 or GREATER.
+     */
+    long getElapsedTimeMs();
+
+}
