@@ -1,0 +1,146 @@
+import java.io.Serializable;
+
+import org.apache.commons.lang.StringUtils;
+
+/**
+ * @author uw8h
+ */
+class GeneralPerformanceMessage implements Serializable, PerformanceMessage {
+
+    private static final long serialVersionUID = 1L;
+    
+    private static final String MESSAGE_FORMAT = "correlationId=%1$s:system=%2$s:operation=%3$s:" + ELAPSED_TIME_PREFIX + "%4$d";
+
+    private static final String TO_STRING_FORMAT = "comp=%1$s|code=%2$d|msg=%3$s";
+
+    static final int MESSAGE_ERROR_CODE = 3333;
+
+    private String mCorrelationId;
+
+    private String mComponentName;
+
+    private String mSystem;
+
+    private String mOperation;
+
+    private long mElapsedTimeMs;
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.vanguard.logging.api.message.Message#getErrorCode()
+     */
+
+    public int getErrorCode() {
+        return MESSAGE_ERROR_CODE;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.vanguard.logging.api.message.Message#getMessage()
+     */
+
+    public String getMessage() {
+        return String.format(MESSAGE_FORMAT, mCorrelationId, mSystem, mOperation, mElapsedTimeMs);
+    }
+
+    /**
+     * Generates a performance message with an EMPTY string for CorrelationId, ComponentName, System, Operation. ElapsedTimeMs is defaulted to
+     * Long.MAX_VALUE.
+     */
+    public GeneralPerformanceMessage() {
+        mCorrelationId = StringUtils.EMPTY;
+        mComponentName = StringUtils.EMPTY;
+        mSystem = StringUtils.EMPTY;
+        mOperation = StringUtils.EMPTY;
+        mElapsedTimeMs = Long.MAX_VALUE;
+    }
+
+    /**
+     * @return the correlationId
+     */
+    public final String getCorrelationId() {
+        return mCorrelationId;
+    }
+
+    /**
+     * @param anCorrelationId
+     *            the correlationId to set
+     */
+    public final void setCorrelationId(String anCorrelationId) {
+        mCorrelationId = StringUtils.stripToEmpty(anCorrelationId);
+    }
+
+    /**
+     * @return the componentName
+     */
+    public final String getComponentName() {
+        return mComponentName;
+    }
+
+    /**
+     * @param anComponentName
+     *            the componentName to set
+     */
+    public final void setComponentName(String anComponentName) {
+        mComponentName = StringUtils.stripToEmpty(anComponentName);
+    }
+
+    /**
+     * @return the operation
+     */
+    public final String getOperation() {
+        return mOperation;
+    }
+
+    /**
+     * @param anOperation
+     *            the operation to set
+     */
+    public final void setOperation(String anOperation) {
+        mOperation = StringUtils.stripToEmpty(anOperation);
+    }
+
+    /**
+     * @return the elapsedTimeMs
+     */
+    public final long getElapsedTimeMs() {
+        return mElapsedTimeMs;
+    }
+
+    /**
+     * @param anElapsedTimeMs
+     *            the elapsedTimeMs to set
+     */
+    public final void setElapsedTimeMs(long anElapsedTimeMs) {
+        mElapsedTimeMs = anElapsedTimeMs;
+    }
+
+    /**
+     * @return the system
+     */
+    public final String getSystem() {
+        return mSystem;
+    }
+
+    /**
+     * @param anSystem
+     *            the system to set
+     */
+    public final void setSystem(String anSystem) {
+        mSystem = StringUtils.stripToEmpty(anSystem);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#toString()
+     */
+
+    @Override
+    public String toString() {
+        return String.format(TO_STRING_FORMAT, getComponentName(), getErrorCode(), getMessage());
+    }
+
+}
