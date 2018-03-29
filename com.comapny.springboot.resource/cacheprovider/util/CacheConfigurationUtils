@@ -1,0 +1,39 @@
+import static com.company.spring.caching.Constants.DEFAULT_CACHING_CONFIGURATION;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
+
+import com.vanguard.spring.caching.CacheConfiguration;
+import com.vanguard.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.vanguard.spring.servicelocator.SpringBeanServiceLocator;
+
+/**
+ * @author uiak
+ * 
+ */
+public class CacheConfigurationUtils {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(CacheConfigurationUtils.class);
+
+    public static CacheEntryKeyGenerationPolicy getCacheEntryKeyGenerators(CacheConfiguration cacheConfig) {
+        return cacheConfig.getCacheEntryKeyGenerator();
+    }
+
+    /**
+     * @param cachingConfigurationName
+     * @return CachingConfiguration
+     * 
+     *         This method uses SpringBeanServiceLocator to locate the caching
+     *         configuration spring bean.
+     */
+    public static CacheConfiguration determineCachingConfiguration(String cachingConfigurationName) {
+        Assert.isTrue(!DEFAULT_CACHING_CONFIGURATION.equals(cachingConfigurationName), cachingConfigurationName + " : Cache configuration is not provided .. invalid configuration");
+
+        LOGGER.trace("Interceptor configured for custom cache configuration {}", cachingConfigurationName);
+
+        // If bean cannot be found this call throw Spring framework generated exception.
+        return (CacheConfiguration) SpringBeanServiceLocator.getSpringManagedBean(cachingConfigurationName);
+    }
+
+}
