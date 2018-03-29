@@ -1,0 +1,16 @@
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheNameGenerationPolicy;
+
+/**
+ * @author uiak This is an example implementation that can provide a dynamic cache name based on runtime contexts such as session id or current thread
+ *         id.
+ */
+@Component("threadscopedCacheNameGeneratorPolicy")
+public class ThreadscopedCacheNameGeneratorPolicy implements CacheNameGenerationPolicy {
+
+    public String generateCacheName() {
+        return Thread.currentThread().getName();
+    }
+
+}
