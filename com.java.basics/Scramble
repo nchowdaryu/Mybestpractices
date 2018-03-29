@@ -1,0 +1,182 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+public class Scramble {
+	public static final int POID_LENGTH = 10;
+	public static final String LEADING_ZERO = "0";
+	public static final String ALL_DIGITS_REGEX = "[0-9]+";
+	
+	
+	public static void main(String[] args) {
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Calendar cal = Calendar.getInstance();
+		System.out.println("Starting Time:="+dateFormat.format(cal.getTime()));
+		
+		String poid = "1541173791";
+		System.out.println("POID=="+poid+" --> SPOID=="+scramble(poid));
+		
+		 // The name of the file to open.
+        String inputFileName = "resources/List_POIDs.txt";
+        
+        // The name of the file to write.
+        String outputFileName = "resources/List_SPOIDs.txt";
+        BufferedWriter bufferedWriter = null;
+        // Assume default encoding.
+        try{
+        	FileWriter fileWriter =
+        			new FileWriter(outputFileName);
+
+        	// Always wrap FileWriter in BufferedWriter.
+        	bufferedWriter = new BufferedWriter(fileWriter);
+        }
+        catch(IOException ex) {
+        	System.out.println(
+        			"Error writing to file '"
+        					+ outputFileName + "'");
+        	// Or we could just do this:
+        	// ex.printStackTrace();
+        }
+
+        // This will reference one line at a time
+        String line = null;
+
+        try {
+            // FileReader reads text files in the default encoding.
+            FileReader fileReader = 
+                new FileReader(inputFileName);
+
+            // Always wrap FileReader in BufferedReader.
+            BufferedReader bufferedReader = 
+                new BufferedReader(fileReader);
+
+            while((line = bufferedReader.readLine()) != null) {
+            	
+                //System.out.println(scramble(line.trim()));
+            	writeToFile(bufferedWriter, line.trim());
+                
+            }    
+
+            // Always close files.
+            bufferedReader.close();            
+        }
+        catch(FileNotFoundException ex) {
+            System.out.println(
+                "Unable to open file '" + 
+                		inputFileName + "'");                
+        }
+        catch(IOException ex) {
+            System.out.println(
+                "Error reading file '" 
+                + inputFileName + "'");                   
+            // Or we could just do this: 
+            // ex.printStackTrace();
+        }finally{
+        	// Always close files.
+            try {
+				bufferedWriter.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+        System.out.println("Ending Time:="+dateFormat.format(cal.getTime()));
+
+	}
+	
+	
+	public static String scramble(String poid) {
+		if(poid == null || poid.length() < 1 || !containsAllDigits(poid)) {
+			return null;
+		}
+		String temp = fillLeadingZeros(poid);
+		temp = ninesComplement(temp);
+		temp = swapFirstAndLastTwoBytes(temp);
+		temp = reverseThreeFourFiveBytesInPlace(temp);
+		return reverseSixSevenEightBytesInPlace(temp);
+	}
+	
+		
+	
+	private static boolean containsAllDigits(String poid) {
+		return poid.matches(ALL_DIGITS_REGEX);
+	}
+	
+	private static String fillLeadingZeros(String poid) {
+		if(poid.length() > POID_LENGTH) {
+			return poid;
+		}
+		return (getLeadingZeroString() + poid).substring(poid.length());
+	}
+	
+	private static String getLeadingZeroString() {
+		StringBuffer temp = new StringBuffer();
+		for(int i = 0; i < POID_LENGTH; i++) {
+			temp.append(LEADING_ZERO);
+		}
+		return temp.toString();
+	}
+	
+	private static String ninesComplement(String poid) {
+		StringBuffer temp = new StringBuffer();
+		char c = ' ';
+		for(int i = 0; i < poid.length(); i++) {
+			c = poid.charAt(i);
+			temp.append('9' - c);
+		}
+		return temp.toString();
+	}
+	
+	private static String swapFirstAndLastTwoBytes(String poid) {
+		String temp = swap(poid, 0, poid.length() - 2);
+		return swap(temp, 1, poid.length() - 1);
+	}
+	
+	private static String reverseThreeFourFiveBytesInPlace(String poid) {
+		return swap(poid, 2, 4);
+	}
+	
+	private static String reverseSixSevenEightBytesInPlace(String poid) {
+		return swap(poid, 5, 7);
+	}
+	
+	private static String swap(String poid, int l, int r) {
+		char[] chars = poid.toCharArray();
+		swap(chars, l, r);
+		return new String(chars);
+	}
+	
+	private static void swap (char[] chars, int l, int r) {
+		char temp = chars[l];
+		chars[l] = chars[r];
+		chars[r] = temp;
+	}
+	
+	private static void writeToFile(BufferedWriter bufferedWriter, String inputData){
+		try {
+            
+			
+            // Note that write() does not automatically
+            // append a newline character.
+            bufferedWriter.write(scramble(inputData));            
+            bufferedWriter.newLine();
+            
+
+            
+        }
+        catch(IOException ex) {
+            System.out.println(
+                "Error writing to file '"
+                + inputData + "' && Exception =="+ex);
+            // Or we could just do this:
+            // ex.printStackTrace();
+        }
+	}
+
+}
