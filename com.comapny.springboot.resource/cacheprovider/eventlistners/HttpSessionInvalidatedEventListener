@@ -1,0 +1,39 @@
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheConfiguration;
+import com.company.spring.caching.events.HttpSessionInvalidatedEvent;
+
+/**
+ * This listener gets invoked when HttpSession is  invalidated and 
+ * HttpSessionInvalidatedEvent is published by a listener implementing 
+ * ApplicationListener.
+ * 
+ * This listener is injected with cache name generation policies implementing
+ * CacheNameGenerationPolicy. The listener iterates through each policy,
+ * generates the cache names and removes the cache from Cache Manager.
+ * 
+ */
+
+@Component("httpSessionInvalidatedEventListener")
+public class HttpSessionInvalidatedEventListener implements ApplicationListener<HttpSessionInvalidatedEvent> {
+    
+	private static final Logger LOGGER = LoggerFactory.getLogger(HttpSessionInvalidatedEventListener.class);
+
+    @Autowired(required=false)
+    private List<CacheConfiguration> cacheConfigurations;
+
+    @Autowired
+    private DynamicCacheCleaner dynamicCacheCleaner;
+
+    @Override
+    public void onApplicationEvent(HttpSessionInvalidatedEvent event) {
+    	LOGGER.trace("Processing Http Session Invalidated Event.");
+        dynamicCacheCleaner.removeCaches(cacheConfigurations);
+    }
+}
