@@ -1,0 +1,36 @@
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import com.company.spring.caching.CacheConfiguration;
+import com.company.spring.caching.events.ClientResetEvent;
+
+/**
+ * This listener gets invoked when an application publishes ClientResetEvent The listener is injected with cache name generation policies implementing
+ * ClientScopedCacheNameGenerationPolicy. The listener iterates through each policy, generates the cache names and removes the cache from Cache
+ * Manager.
+ * 
+ * Typically in internal applications such as WAVE, would publish ClientResetEvent up on retrieving a new client there by triggering invalidation of
+ * all Client scoped caches
+ */
+@Component("clientResetEventListener")
+public class ClientResetEventListener implements ApplicationListener<ClientResetEvent> {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClientResetEventListener.class);
+
+    @Autowired(required=false)
+    private List<CacheConfiguration> cacheConfigurations;
+
+    @Autowired
+    private DynamicCacheCleaner dynamicCacheCleaner;
+
+    @Override
+    public void onApplicationEvent(ClientResetEvent event) {
+    	LOGGER.info("Processing Client Reset Event.");
+    	dynamicCacheCleaner.removeCaches(cacheConfigurations);
+    }
+}
