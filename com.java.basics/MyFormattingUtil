@@ -1,0 +1,283 @@
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class MyFormattingUtil {
+	
+	static List<Calendar> holidays = new ArrayList<Calendar>(); 
+	private static final int MAX_UNDERLYING_CLIENT_LENGTH = 40;
+
+	public static void main(String[] args) {
+		
+		String testing = "";
+		//System.out.println("substring="+testing.substring(0, MAX_UNDERLYING_CLIENT_LENGTH));
+		
+		
+		String[] subDataParts = "abcde".trim().split("\\s+");
+		System.out.println(subDataParts.length);
+		int aa= 3;
+		int bb = 2;
+		int cc = 0;
+				if(aa > bb + cc){
+					System.out.println("Inside if");
+				}
+		Map<String,String> testMap = new HashMap<String,String>();
+		testMap.put("1", "One");
+		testMap.put("2", "Two");
+		testMap.put("1", "One Again");
+		testMap.put("3", "Three");
+		testMap.put("1", "One Once more");
+		testMap.put(null,null);
+		testMap.put(null,"Null Again");
+		
+		
+		System.out.println("HashMap result="+testMap.get(null));
+		String input = "eéaà";
+	    String output = input.replaceAll("[^\\p{ASCII}]", ""); //replace all NON ASCII characters.
+	    System.out.println(output);
+	    
+		String toUpperCase = "code";
+		char[] arrayChar = toUpperCase.toCharArray();
+		String reverseOutput = "";
+		StringBuilder uppercaseOutput = new StringBuilder();
+		for(int i = arrayChar.length-1; i>=0 ; i--){
+			reverseOutput+= arrayChar[i];
+		}
+		
+		System.out.println("Reverse a String with out API=="+reverseOutput);
+		
+		for(int i =0; i < arrayChar.length ; i++){
+			char tempUuppercase = (char)(arrayChar[i]-32);
+			
+			uppercaseOutput.append(Character.toString(tempUuppercase));
+			
+		}
+		
+		System.out.println("Converting to UpperCase without API=="+uppercaseOutput);
+		
+		int a = Integer.MAX_VALUE;
+		int b = 15000;
+		a = a^b;
+		b = a^b;
+		a= a^b;
+		System.out.println("AA:"+a +"  && BB:"+b);
+		a = a+b;
+		System.out.println(""+a);
+		System.out.println(""+'a');
+		
+		int q = 1 ;
+		int w = 2 ;
+		q = (q+w) - (w=q);
+		System.out.println("Swapping 2 numbers with out 3rd varibale: q=="+q+" && w=="+w);
+		int nag = (10 - (12) ) ;
+		System.out.println(nag);
+		System.out.println();
+		String lower = "abc";
+		System.out.println(lower.toUpperCase());
+		
+		int xx = 5;
+		System.out.println(xx++);
+		System.out.println(xx++);
+		System.out.println(xx++);
+		int yy = 10;
+		int zz = ++xx * yy--;
+		System.out.println(zz);
+		System.out.println(1 + 2 + "abc");
+		System.out.println("abc" + 1 + 2);
+		
+		int x=10;
+		x= x++ - ++x;
+		System.out.println("Result = "+x);
+		
+		int y =10;
+		y =(y++) - (++y) ;
+		
+		System.out.println("Result2="+y);
+		int z = ++y;
+		System.out.println("Result3="+z);
+		
+		Date date = new Date(System.currentTimeMillis());
+		SimpleDateFormat sfd = new SimpleDateFormat("yyyyMMdd_HHmmss");
+		System.out.println(sfd.format(date));
+		
+		Boolean testBool = false;
+		
+		if(testBool){
+			System.out.println("Boolean Wrapper does Auto Casting from primitives.");
+		}
+		
+		
+		
+		
+		
+		String configPropertyFilePath = "C:/projects/FAS_NonLT/NonLTFeedConfiguration.properties";  //for local testing only
+		System.out.println("File extension:="+configPropertyFilePath.substring(configPropertyFilePath.lastIndexOf(".")+1));
+		System.out.println(1<<30);
+		String nextDay = getNextWorkingDay();
+		System.out.println("Next Day=="+nextDay);
+		
+		BigDecimal big = new BigDecimal("3368667689.56902900");
+		BigDecimal big11 = new BigDecimal(0);
+		double d = big.doubleValue();
+		System.out.println("DOuble equivalent=="+d);
+		//double currency = 3368667689.56902900;
+		//System.out.println("Big Decimal DOuble equivalent=="+currency.doubleValue());
+		NumberFormat formatter = NumberFormat.getCurrencyInstance();
+		System.out.println("Currency formatted in USD using java.text.NumberFormat ="+formatter.format(d));
+		System.out.println("Formatted=="+String.valueOf(formatter.format(d)));
+		
+		//Date format
+		String inputDate = "03/28/2016";
+		Date outputDate = convertStringToDate(inputDate);
+		System.out.println("output Date11 =="+outputDate);
+		
+		//String format
+		
+		String inputString = "N000345678";
+		String subString =inputString.substring(1,inputString.length());
+		System.out.println("Substring=="+subString);
+		
+		String inputString2 = "Notification ID ? N00065660";
+		String subString2 =inputString2.substring(18,inputString2.length());
+		System.out.println("Substring222=="+subString2);
+		System.out.println("BigInteger Value =="+new BigInteger(subString));
+		
+		BigDecimal big2 = new BigDecimal(0.01);
+	
+		System.out.println("String representation of Big Decimal=="+	big2.toBigInteger().toString());
+		String actComments ="";
+		String comments = "Total number of transactions: 1. 1 above QT and one greater than 50% of Total.Nothing above LT.~AC:Updated dollar amount received less than 30 minutes before cutoff time.~";
+		String[] splitValues = comments.split("~");
+		for(int i= 0;i < splitValues.length; i++ ){
+			if(splitValues[i].startsWith("AC:")){
+				actComments = splitValues[i].substring(3);
+				break;
+			}
+		}
+		
+		System.out.println("Retained comments=="+actComments);
+		
+		String text = "CENT";
+		System.out.println(text.subSequence(0, 2));
+		
+		
+		System.out.print("03/01/2017".replace("/", ""));
+		
+		String str="000101000";
+		System.out.println("my output=="+str.replaceAll("^0+(?!$)", ""));
+		System.out.println("code=="+LTQTLinkingEventTypeEnum.getLinkingGroupEventCode("RENT"));
+		
+		String beforeComments = "Total number of transactions: 1.1 above QT and one greater than 50% of Total.Nothing above LT.Updated dollar amount received less than 300 minutes before market close and matching approved notification 51848 for today.This notification was created for the difference.This Notification was Approved.";
+		//beforeComments = "avc";
+		String convertedComments = beforeComments.replace(".", "; ");
+		
+		System.out.println("STEP1:="+convertedComments);
+		if(convertedComments.length()>2)
+			System.out.println("After comments=="+convertedComments.substring(0, convertedComments.length()-2)+".");
+		
+		
+		//String afterComments = beforeComments.replace(".", "; ");
+		//System.out.println("After comments=="+afterComments.substring(0, afterComments.length()-2)+".");
+		//System.out.println("code22=="+LTQTLinkingEventTypeEnum.valueOf("RENT"));
+	}
+	
+	
+	
+	/*private boolean booleanbooleanPrimitive(){
+		boolean someFlag;
+		//someflag  = getfromSomeService();
+		//return someFlag;
+	}
+	*/
+	public static String formatDate(String inputDate){
+		String methodName = "Inside convertStringToDate";
+		Date outputDate = null;
+		String formattedOutputDate = null;
+		DateFormat inputFormatter = new SimpleDateFormat("MM/dd/yyyy");
+		DateFormat outputFormatter = new SimpleDateFormat("yyyy-MM-dd");
+		try {
+			outputDate = inputFormatter.parse(inputDate);
+			System.out.println("INPUT date="+outputDate);
+			formattedOutputDate = outputFormatter.format(outputDate);
+			System.out.println("Formatted OUTPUT date="+formattedOutputDate);
+		} catch (ParseException e) {
+			System.out.println(methodName+"Parsing input String:"+inputDate+" to Date FAILED"+e.getMessage());
+		}
+		return formattedOutputDate;
+		
+		
+	}
+	
+	public static Date convertStringToDate(String inputDate){
+		String methodName = "Inside convertStringToDate";
+		Date outputDate = null;
+		
+		DateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+		try {
+			outputDate = formatter.parse(inputDate);
+			
+		} catch (ParseException e) {
+			System.out.println(methodName+" Parsing input String:"+inputDate+" to Date FAILED"+e.getMessage());
+		}
+		return outputDate;	
+		
+	}
+	
+	public static Date addDays(Date d, int days) {
+	    Calendar cal = Calendar.getInstance();
+	    cal.setTime(d);
+	    cal.add(Calendar.DATE, days);
+	    return cal.getTime();
+	}
+	
+	public static boolean isWeekEnd(java.util.Date d) {
+	    Calendar c = new GregorianCalendar();
+	    c.setTime(d);
+	    if((Calendar.SATURDAY == c.get(c.DAY_OF_WEEK)) || (Calendar.SUNDAY == c.get(c.DAY_OF_WEEK))) {
+	        return (true);
+	    } else {
+	        return false;
+	    }
+	}
+	
+	public static String getNextWorkingDay(){
+		DateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+		int curentTImeinHours = Calendar.HOUR_OF_DAY;
+		System.out.println("curentTImeinHours="+curentTImeinHours);
+		Calendar c = new GregorianCalendar();
+	    c.setTime(new Date());
+	    System.out.println("Time Zone:"+c.getTimeZone());
+	    System.out.println("TIme:"+c.getTime());
+	    System.out.println("TIme in HOURS==:"+c.get(Calendar.HOUR_OF_DAY));
+	    
+	    
+	    if((Calendar.FRIDAY == c.get(c.DAY_OF_WEEK))) {
+	        return formatter.format(addDays(new Date(),3)); //Skipping Saturday & Sunday
+	    }
+
+	    return formatter.format(addDays(new Date(),1));
+	}
+	
+
+	/*public XMLGregorianCalendar convertDateToGregorianCalender(Date inputDate){
+		//First Convert the Date to Calendar
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(inputDate);
+		return XMLGregorianCalendarFactory.newXMLGregorianCalendar(cal);
+		http://stackoverflow.com/questions/13568543/how-do-you-specify-the-date-format-used-when-jaxb-marshals-xsddatetime
+		
+	}
+	*/
+
+}
