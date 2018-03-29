@@ -1,0 +1,14 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.util.Assert;
+
+public class MethodNameAppender extends AbstractAppender {
+
+    @Override
+    public String processCacheKeyData(ProceedingJoinPoint pjp) {
+        Assert.notNull(pjp);
+        
+        String methodName = pjp.getSignature().getName();
+        return methodName;
+    }
+
+}
