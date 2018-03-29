@@ -1,0 +1,14 @@
+import javax.servlet.http.HttpSession;
+
+class BackgroundThreadSessionRetriever extends AbstractSessionRetriever {
+
+    BackgroundThreadSessionRetriever(AbstractSessionRetriever nextRetriever) {
+        super(nextRetriever);
+    }
+
+    @Override
+    protected HttpSession getLocalSession() {
+        return BackgroundThreadContextHolder.getSessionAttribute();
+    }
+
+}
