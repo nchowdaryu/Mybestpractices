@@ -1,0 +1,24 @@
+import org.apache.commons.collections.Predicate;
+import org.springframework.cache.Cache;
+
+/**
+ * This is a interface for housing behaviors that do not exist on the standard
+ * spring caching framework interface: Cache.  Unfortunately, we don't seem to be
+ * able to go with the straight-up Cache interface and need additional behavior
+ * 
+ * @author uvjl
+ */
+public interface EnhancedCache extends Cache {
+    
+    void removeMatchingKeys(Predicate predicate);
+
+    boolean isBlocking();
+    
+    /**
+     * Method to verify that the object that is provided meets the specific criteria of the
+     * implementation cache for objects being inserted into it.  Some caches require
+     * that they be serializable, for example.
+     */
+    void validateObjectForCache(Object cacheEntry);
+    
+}
