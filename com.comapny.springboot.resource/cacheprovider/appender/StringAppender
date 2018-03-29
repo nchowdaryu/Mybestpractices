@@ -1,0 +1,18 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.util.Assert;
+
+public class StringAppender extends AbstractAppender {
+    
+    private String value;
+    
+    public StringAppender(String value) {
+        Assert.hasText(value);
+        this.value = value;
+    }
+
+    @Override
+    public String processCacheKeyData(ProceedingJoinPoint pjp) {
+        return this.value;
+    }
+
+}
