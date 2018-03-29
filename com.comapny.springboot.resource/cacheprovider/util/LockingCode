@@ -1,0 +1,17 @@
+import java.util.concurrent.locks.ReadWriteLock;
+
+public interface LockingCode {
+    
+    /**
+     * The lock object used
+     * 
+     * @return
+     */
+    ReadWriteLock getLock();
+    
+    /**
+     * Code that will be executed within the lock
+     */
+    void execute();
+
+}
