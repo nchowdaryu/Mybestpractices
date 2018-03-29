@@ -1,0 +1,122 @@
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.company.service.application.ltqtnotification.external.batch.constant.LTQTBatchErrorMsgConstants;
+import com.company.service.application.ltqtnotification.external.batch.pojo.LTQTBatchDetailInfo;
+import com.company.service.application.ltqtnotification.external.batch.pojo.LTQTBatchErrorInfo;
+import com.company.service.application.ltqtnotification.external.batch.pojo.LTQTBatchFileInfo;
+import com.company.service.application.ltqtnotification.external.batch.pojo.NotificationDetailsRawData;
+import com.company.service.application.ltqtnotification.external.shared.enums.LTQTApplicationCode;
+import com.company.service.application.ltqtnotification.shared.pojo.LTQTNotificationApplicationException;
+import com.company.service.technical.logging.LogFactory;
+
+@Component
+public class LTQTBatchRecordParser {
+	
+	@Autowired
+	LTQTBatchRecordValidator aBulkUploadRecordValidator;
+
+	
+
+	
+	public LTQTBatchFileInfo parseAndValidateMessage(String rawDataMessage) throws LTQTNotificationApplicationException {
+		String methodName = "parseAndValidateMessage";
+		LogFactory.getLog().logReport(methodName, " Begin "+methodName);
+	
+		LTQTBatchFileInfo batchFileInfo =null;
+		
+		try{
+
+			batchFileInfo = new LTQTBatchFileInfo();
+			String[] recordValuesSplit =  rawDataMessage.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+			List<String> recordValues = new ArrayList<String>();
+
+			for(int i=0 ;i < recordValuesSplit.length;i++){
+				recordValues.add( recordValuesSplit[i].replace("\"", "").trim());
+			}
+			batchFileInfo =convertCSVandValidate(recordValues);
+			LogFactory.getLog().logReport(methodName, " End "+methodName);
+		}catch(Exception e){
+			LogFactory.getLog().logError(methodName," LTQTBatchRecordParser SystemException" + e, LTQTBatchErrorMsgConstants.SYSTEM_EXCEPTION);
+			throw new LTQTNotificationApplicationException(methodName + " LTQTBatchRecordParser SystemException" , LTQTBatchErrorMsgConstants.SYSTEM_EXCEPTION);
+		}		
+
+		return batchFileInfo;
+	}
+	
+	private LTQTBatchFileInfo convertCSVandValidate(List<String> recordValues) {
+		LogFactory.getLog().logReport("convertCSVandValidate", " Begin convertCSVandValidate");
+		
+		LTQTBatchFileInfo fileInfo =new LTQTBatchFileInfo();
+		fileInfo.setBatchFileId(new BigDecimal(recordValues.get(0)));
+		fileInfo.setLtqtBatchClientId(Integer.valueOf(recordValues.get(2)));
+		fileInfo.setLtqtBatchClientName(recordValues.get(3));
+		fileInfo.setUploadSrc(recordValues.get(4));
+		fileInfo.setFileName(recordValues.get(5));
+		fileInfo.setUserPoid(Integer.valueOf(recordValues.get(6)));
+		List<LTQTBatchDetailInfo> batchDetailsInfoList =new ArrayList<LTQTBatchDetailInfo>();
+		LTQTBatchDetailInfo batchDetailInfo = convertCSVtoRawDataObject(recordValues);
+		List<LTQTBatchErrorInfo> errorList =  aBulkUploadRecordValidator.validateRecord(batchDetailInfo.getNotificationDetailsRawData());
+		if(LTQTApplicationCode.PORTAL_FILE_PROCESS.getValue().equalsIgnoreCase(fileInfo.getUploadSrc())){
+			errorList = aBulkUploadRecordValidator.validatePortalRecord(batchDetailInfo.getNotificationDetailsRawData(), errorList);
+		}
+		batchDetailInfo.setLtqtBatchErrorInfoList(errorList);
+		batchDetailsInfoList.add(batchDetailInfo);
+		
+		fileInfo.setLtqtBatchDetailInfoList(batchDetailsInfoList);
+		LogFactory.getLog().logReport("convertCSVandValidate", " End convertCSVandValidate");
+		return fileInfo;
+		
+	}
+
+	private LTQTBatchDetailInfo convertCSVtoRawDataObject(List<String> recordValues) {
+		
+		LogFactory.getLog().logReport("convertCSVtoRawDataObject", " Begin convertCSVtoRawDataObject");
+		LTQTBatchDetailInfo batchDetailInfo = new LTQTBatchDetailInfo();
+		batchDetailInfo.setBatchDetailId(new BigDecimal(recordValues.get(7)));
+		batchDetailInfo.setBatchFileId(new BigDecimal(recordValues.get(0)));
+		
+		NotificationDetailsRawData bulkUploadRawData = new NotificationDetailsRawData();
+		bulkUploadRawData.setFileID(recordValues.get(0));
+		bulkUploadRawData.setRecordType(recordValues.get(8));
+		bulkUploadRawData.setRecordID(recordValues.get(9));
+		bulkUploadRawData.setTransactionType(recordValues.get(10));		
+		bulkUploadRawData.setNotificationID(recordValues.get(11));
+		bulkUploadRawData.setTradeDate(recordValues.get(12));
+		bulkUploadRawData.setTradeAmountIndicator(recordValues.get(13));
+		bulkUploadRawData.setDollarAmount(recordValues.get(14));
+		bulkUploadRawData.setNumberOfShares(recordValues.get(15));
+		bulkUploadRawData.setFundOrCUSIPOrTicker(recordValues.get(16));
+		bulkUploadRawData.setAccountTypeIndicator(recordValues.get(17));
+		bulkUploadRawData.setNSCCID(recordValues.get(18));
+		bulkUploadRawData.setAccountOrFINOrMasterNo(recordValues.get(19));
+		//Contact information
+		bulkUploadRawData.setPrimaryContactName(recordValues.get(20));
+		bulkUploadRawData.setPrimaryContactPhoneNo(recordValues.get(21));
+		bulkUploadRawData.setPrimaryContactEXT(recordValues.get(22));
+		bulkUploadRawData.setPrimaryContactEmail(recordValues.get(23));
+		bulkUploadRawData.setAlternateContactName(recordValues.get(24));
+		bulkUploadRawData.setAlternateContactPhoneNo(recordValues.get(25));
+		bulkUploadRawData.setAlternateContactEXT(recordValues.get(26));
+		bulkUploadRawData.setAlternateContactEmail(recordValues.get(27));
+		
+		bulkUploadRawData.setTradingFirm(recordValues.get(2)); // Trading firm with poid
+		bulkUploadRawData.setUnderlyingClient(recordValues.get(29));
+		bulkUploadRawData.setComments(recordValues.get(30));
+		bulkUploadRawData.setTradingChannel(recordValues.get(31));
+		bulkUploadRawData.setProcessingMethod(recordValues.get(32));
+		bulkUploadRawData.setLongTermInvestment(recordValues.get(33));
+		//Added custome param
+		bulkUploadRawData.setPreProcessCustomParam(recordValues.get(34));
+		batchDetailInfo.setNotificationDetailsRawData(bulkUploadRawData);
+		
+		LogFactory.getLog().logReport("convertCSVtoRawDataObject", " End convertCSVtoRawDataObject");
+		return batchDetailInfo;
+		
+	}
+	
+}
