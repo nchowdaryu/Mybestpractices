@@ -1,0 +1,86 @@
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.company.spring.caching.CacheEntryKeyGenerationPolicy;
+import com.company.spring.caching.Constants;
+import com.company.spring.caching.EnhancedCacheManager;
+import com.company.spring.caching.annotations.SingleKeyCacheFlush;
+import com.company.spring.caching.util.CacheEntryKeyGenerationUtils;
+
+/**
+ * @author uiak
+ * 
+ */
+@Aspect
+@Component("cacheEntryFlusherAspect")
+@Order
+public class SingleKeyCacheFlushAspect extends AbstractCachingInterceptor {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SingleKeyCacheFlushAspect.class);
+
+    /**
+     * @param anCacheManager
+     * @param anPointcutMethodArgumentsCacheEntryKeyGeneratorPolicy
+     */
+    @Autowired
+    SingleKeyCacheFlushAspect(
+	    @Qualifier("cacheManager")
+	    EnhancedCacheManager cacheManager,
+	    @Qualifier("pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy")
+	    CacheEntryKeyGenerationPolicy pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy) {
+        super(cacheManager, pointcutMethodArgumentsCacheEntryKeyGeneratorPolicy);
+    }
+
+    @Override
+    public int getOrder() {
+        return cachEntryFlushAspectOrder;
+    }
+
+    @Pointcut("@annotation(singlekeycacheflush)")
+    public void cacheEntryFlushPointCut(SingleKeyCacheFlush singlekeycacheflush) {
+    }
+
+    @Around(value = "cacheEntryFlushPointCut(cacheentryflushable)", argNames = "cacheentryflushable")
+    public Object interceptForFlushingCacheEnry(ProceedingJoinPoint pjp,
+	    SingleKeyCacheFlush cacheentryflushable) throws Throwable  { 
+
+    	LOGGER.trace("Applying SingleKeyCacheFlush Aspect on {}, executing target method marked for cache entry removal", pjp.toLongString());
+    	
+        // Invoke the target method
+    	Object  result = pjp.proceed();
+    
+    	/* TODO the following code is duplicated in CacheEntryCreatorAspect */
+    	String cachingConfigurationName = cacheentryflushable.cache();
+    	String overridecacheentrykey = cacheentryflushable.key();
+    	String cacheentrykeyprefix = cacheentryflushable.keyprefix();
+    	String keygroupid = cacheentryflushable.keysgroupid();
+    
+    	String generatedCacheKey = CacheEntryKeyGenerationUtils.generateCacheKey(cachingConfigurationName,
+    		cacheentrykeyprefix, overridecacheentrykey, pjp, pointcutMethodArgumentsOnlyCacheEntryKeyGeneratorPolicy);
+    
+    	if (StringUtils.hasText(keygroupid)
+    		&& !keygroupid.equals(Constants.DEFAULT_KEYS_GROUP_ID)) {
+    	    generatedCacheKey = CacheEntryKeyGenerationUtils.applyKeyGroupId(keygroupid, generatedCacheKey);
+    	}
+    	/* end duplicate code */
+        
+    	Cache cache = cacheManager.getCache(cachingConfigurationName);
+    	LOGGER.trace("Removing cache entry {} from cache {}", generatedCacheKey, cache.getName());
+    
+    	// if the target method executed successfully, clean cache entry
+        cache.evict(generatedCacheKey);
+    
+    	return result;
+    }
+
+}
