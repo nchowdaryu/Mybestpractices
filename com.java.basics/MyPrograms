@@ -1,0 +1,50 @@
+import java.util.Calendar;
+import java.util.Date;
+
+public class MyPrograms {
+	int n=15, n1 = 0, n2=1,fibNext;
+	
+	public static void main(String[] args) {
+		
+		System.out.println("Testing Timezone Now="+Calendar.getInstance().getTime());
+		MyPrograms myObj = new MyPrograms();
+		//Program for Fibonacci Series. f(n) = f(n-1) + f(n-2) where first two numbers are 0 & 1.
+		//boundaries print first 15 numbers
+		System.out.println("Time Now="+Calendar.getInstance().get(Calendar.MILLISECOND));
+		myObj.printFibonacciSeriesByLoopLogic();
+		System.out.println("Time After Loop Logic="+Calendar.getInstance().get(Calendar.MILLISECOND));
+		System.out.println("\n Other way");
+		System.out.println("Time Now2="+Calendar.getInstance().get(Calendar.MILLISECOND));
+		myObj.printFibonacciSeriesByRecursionLogic();
+		System.out.println("Time After Recursion Logic="+Calendar.getInstance().get(Calendar.MILLISECOND));
+	}
+	
+	
+	private void printFibonacciSeriesByLoopLogic(){
+		System.out.print(n1+" "+n2);
+		for (int i=2;i<n;i++){
+			fibNext= n1+n2;
+			System.out.print(" "+fibNext);
+			n1 =n2;
+			n2 = fibNext;
+		}
+		
+	}
+	
+	private void printFibonacciSeriesByRecursionLogic(){
+		for (int i = 0; i <n; i++) {
+            System.out.print(retunFibonacciNumber(i) + " ");
+        }
+	}
+	
+	public static int retunFibonacciNumber(int inputNumber){
+		if (inputNumber == 0) {
+            return 0;
+        } else if (inputNumber == 1) {
+            return 1;
+        } else {
+		return retunFibonacciNumber(inputNumber-1) + retunFibonacciNumber(inputNumber-2);
+        }
+	}
+
+}
