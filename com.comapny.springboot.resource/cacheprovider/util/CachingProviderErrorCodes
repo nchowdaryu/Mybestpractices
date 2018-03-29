@@ -1,0 +1,158 @@
+/**
+ * Error Codes for the CachingProvider module.
+ * <p>Start: 2032060
+ * <p>End:   2032079
+ * @author uvjl
+ */
+public enum CachingProviderErrorCodes {
+    
+    /**
+     * <b>DynamicCacheCleaner</b>
+     * <i>(WARNING)</i>
+     * [2032061]
+     * There are valid cases when the Http Session based cache name generation
+     * policies would not be able to generate the cache name. For e.g. in the
+     * Internal Web Applications using DefaultClientScopedCacheNameGeneration
+     * Policy, we expect the "poid" to be available in the Http Session. What if
+     * the internal user never loads a client, i.e., log-on to the application
+     * and log-off, there will not be a POID in the Http Session. Please review
+     * the sequence of events to determine if this similar to the scenario
+     * listed above.
+     */
+    CACHE_NAME_GENERATOR("2032061"),
+    
+    /**
+     * <b>DynamicCacheCleaner</b>
+     * <i>(WARNING)</i>
+     * [2032062]
+     * This message indicates that the listed cache is being removed from the
+     * cache manager. This message is being logged to enable better debugging in
+     * Unix Regions where typically log level is set to WARN and above. This
+     * message does not indicate any coding error.
+     */
+    REMOVING_CACHE("2032062"),
+    
+    /**
+     * <b>DynamicCacheCleaner</b>
+     * <i>(WARNING)</i>
+     * [2032063]
+     * This message indicates that the MBean corresponding to the cache being
+     * removed from the cache name failed to be deactivated. This is possible if
+     * the module is not running on WebSphere.
+     */
+    MBEAN_CLEANUP("2032063"),
+    
+    /**
+     * <b>ThreadScopedCacheResetEventListener</b>
+     * <i>(WARNING)</i>
+     * [2032064]
+     * This message indicates that the Thread Reset Event has been raised and is
+     * removing Client scoped cache names. This message is being logged to
+     * enable better debugging in Unix Regions where typically log level is set
+     * to WARN and above. This message does not indicate code error.
+     */
+    CLIENT_RESET_EVENT("2032064"),
+    
+    /**
+     * <b>ThreadScopedCacheResetEventListener</b>
+     * <i>(WARNING)</i>
+     * [2032065]
+     * This message indicates that the Thread Reset Event has been raised and is
+     * removing Thread scoped cache names. This message is being logged to
+     * enable better debugging in Unix Regions where typically log level is set
+     * to WARN and above. This message does not indicate code error.
+     */
+    THREAD_RESET_EVENT("2032065"),
+    
+    /**
+     * <b>WebSphereAdminServerUtility</b>
+     * <i>(WARNING)</i>
+     * [2032069]
+     * This message indicates that the WebSphere JMX MBean server instance
+     * cannot be reached while trying to deregister/remove a JMX MBean. If the
+     * module is being run outside of WebSphere, this can be ignored but
+     * suggests misconfiguration (attempting to use JMX outside of WebSphere).
+     */
+    NO_ADMIN_SERVER("2032069"),
+    
+    /**
+     * <b>SessionCacheProviderSessionListener</b>
+     * <i>(ERROR)</i>
+     * [2032070]
+     * When a session is invalidated, an event is published through the Spring
+     * ApplicationContext to notify listeners that session-based caches need to
+     * be destroyed. If the ApplicationContext did not load properly, this
+     * causes an IllegalStateException to be thrown which is the basis for this
+     * error log message (see NGSA TeamTrack 1148 for more background). If the
+     * application did not start successfully, diagnose the errors in the
+     * HVLM/standard out/standard error logs and fix any problems. Once the
+     * ApplicationContext starts without errors, you should no longer hit this
+     * error condition.
+     */
+    COULD_NOT_PUBLISH_SESSION_INVALIDATED("2032070"),
+    
+    /**
+     * <b>WebSphereAdminServerUtility</b>
+     * <i>(WARNING)</i>
+     * [2032071]
+     * This message indicates that an exception was thrown while trying to
+     * deregister/remove a JMX MBean from WebSphere. This is not a error error
+     * but should be investigated when possible since the application requested
+     * JMX to be used through configuration.
+     */
+    COULD_NOT_REMOVE_MBEAN("2032071"),
+    
+    /**
+     * <b>BlockingCacheDeadlockDetector</b>
+     * <i>(ERROR)</i>
+     * [2032073]
+     * This error occurs when caching application code is nested and using the
+     * same blocking cache.  This has a potential to create deadlocks and is
+     * not allowed.  An exception will be thrown and the application implementing
+     * caching in this manner needs to investigate the error and exception to
+     * eliminate the nested calls to the same cache.
+     */
+    NESTED_CACHING_CALL("2032073"),
+    
+    /**
+     * <b>EhcacheFactoryImpl</b>
+     * <i>(ERROR)</i>
+     * [2032074]
+     * This error would occur when caching provider is unable to create a EhCache.
+     * The name of the failed cache will be listed in the log as well as the exception.
+     * When a cache cannot be created, caching for application code using the specified
+     * cache will not be caching.  Inspect the exception in the log for troubleshooting.
+     */
+    ERROR_IN_DYNAMIC_CACHE_CREATION("2032074"),
+    
+    /**
+     * <b>GemFireCache</b>
+     * <i>(ERROR)</i>
+     * [2032075]
+     * An exception was thrown when attempting to get/put a value into GemFire.  The
+     * log will indicate if it was a put or a get that failed.  Look at the exception
+     * for help with resolution.
+     */
+    GEMFIRE_IO_FAILURE("2032075"),
+    
+    /**
+     * <b>CacheServiceImpl</b>
+     * <i>(ERROR)</i>
+     * [2032076]
+     * The error occurs when the specified Gemfire Region was not retrievable.  When
+     * this happens, the logic returns a Null Object Pattern Cache that will do no
+     * caching.
+     */
+    GEMFIRE_REGION_FAILURE("2032076");
+    
+    private String code;
+    
+    CachingProviderErrorCodes(String code) {
+        this.code = code;
+    }
+    
+    public String getCode() {
+        return code;
+    }
+
+}
