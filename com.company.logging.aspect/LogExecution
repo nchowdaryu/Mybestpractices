@@ -1,0 +1,24 @@
+/**
+ * Indicates when the LogAspect should log messages.  
+ * Corresponds to the &#64;AspectJ style annotations of Spring AOP.
+ * 
+ * @author u16t
+ */
+public enum LogExecution {
+    
+    /**
+     * Before entering a method
+     */
+    BEFORE,
+    
+    /**
+     * After returning normally, i.e. not throwing an exception
+     */
+    AFTER_RETURNING,
+    
+    /**
+     * After throwing an exception
+     */
+    AFTER_THROWING;
+    
+}
