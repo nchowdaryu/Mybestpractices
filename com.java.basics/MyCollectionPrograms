@@ -1,0 +1,123 @@
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class MyCollectionPrograms {
+
+	public static void main(String[] args) throws ParseException {
+		// TODO Auto-generated method stub
+		
+		List<Person> listPersons = new ArrayList<Person>();
+		listPersons.add(new Person("Naga", "Upputuri", 30));
+		listPersons.add(new Person("Rajani", "Bachina", 27));
+		listPersons.add(new Person("Nikhil", "Upputuri", 2));
+		
+		Collections.sort(listPersons);
+		
+		for(Person p: listPersons){
+			System.out.println(p.toString());
+		}
+		
+		
+		
+		
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+	     System.out.println(formatter.parse("2017/01/01"));
+	    
+	     List<Employee> listEmployees = new ArrayList<Employee>();
+	     listEmployees.add(new Employee(10, "Naga", "Upputuri", formatter.parse("2018/01/01")));
+	     listEmployees.add(new Employee(7, "Someone", "Else1", formatter.parse("2017/01/01")));
+	     listEmployees.add(new Employee(1, "Someone", "Else2", formatter.parse("2008/01/01")));
+	     listEmployees.add(new Employee(2, "Someone", "Else3", formatter.parse("2008/02/01")));
+	     listEmployees.add(new Employee(3, "Someone", "Else4", formatter.parse("2008/02/11")));
+	     
+	     Collections.sort(listEmployees, new SortEmployeeByHireDate());
+	     
+	     for(Employee e: listEmployees){
+				System.out.println(e.toString());
+			}
+	     
+	     //Duplicates in Array of Strings
+	     
+	     String[] strArray = {"abc", "def", "mno", "xyzzzz", "pqr", "xyz", "def"};
+	     
+	     System.out.println("Search Result:"+Arrays.binarySearch(strArray, "123"));
+	        Set<String> set = new HashSet<String>();
+	 
+	        for (String arrayElement : strArray)
+	        {
+	            if(!set.add(arrayElement))
+	            {
+	                System.out.println("Duplicate Element is : "+arrayElement);
+	            }
+	        }
+	        
+	        StringBuffer sbf = new StringBuffer("ABCD");
+	       System.out.println(sbf.reverse());
+	        
+	      /*Runtime runtime = Runtime.getRuntime();     //getting Runtime object
+	        
+	        try
+	        {
+	            runtime.exec("notepad.exe");        //opens new notepad instance
+	 
+	            //OR runtime.exec("notepad");
+	        }
+	        catch (IOException e)
+	        {
+	            e.printStackTrace();
+	        }*/
+	       System.out.println("Alphabets numberic value:");
+	       System.out.println(Character.getNumericValue('a'));
+			System.out.println(Character.getNumericValue('A'));
+			System.out.println(Character.getNumericValue('Z'));
+	       int armstrong = 153;
+	       int length = String.valueOf(armstrong).length();
+	       int sum =0;
+	       String s = String.valueOf(armstrong);
+	       char[] cArray = s.toCharArray();
+	       for (int i=0 ; i< cArray.length ; i++){
+	    	   sum = sum + calculatePowerOfNumber(cArray[i], length);
+	       }
+	       System.out.println("Sum=="+sum);
+	       if(!false==true){
+	    	   System.out.println("False == False");
+	       }
+	       
+	       System.out.println(isPureAscii("é"));
+	       
+
+	}
+	
+	static int calculatePowerOfNumber(char c, int power){
+		int number = Character.getNumericValue(c);
+		
+		return (int) Math.pow(number, power);
+	}
+	
+	public static boolean isPureAscii(String v) {
+	    byte bytearray []  = v.getBytes();
+	    CharsetDecoder d = Charset.forName("US-ASCII").newDecoder();
+	    try {
+	      CharBuffer r = d.decode(ByteBuffer.wrap(bytearray));
+	      r.toString();
+	    }
+	    catch(CharacterCodingException e) {
+	      return false;
+	    }
+	    return true;
+	  }
+
+}
