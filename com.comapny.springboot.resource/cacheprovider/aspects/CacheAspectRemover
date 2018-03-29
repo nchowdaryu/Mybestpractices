@@ -1,0 +1,117 @@
+import java.util.Map;
+
+import org.aopalliance.aop.Advice;
+import org.apache.commons.collections.Predicate;
+import org.springframework.aop.aspectj.AbstractAspectJAdvice;
+import org.springframework.aop.aspectj.AspectJPointcutAdvisor;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.util.Assert;
+
+import com.company.predicates.string.StringInArrayOrCollectionPredicate;
+
+/**
+ * BeanFactoryPostProcessor that prevents caching from occurring. This is done by removing the bean definitions for cache interceptors (for those
+ * using flexible configuration) and the aspect beans (for those using autowire configuration). One case when this is necessary is during performance
+ * testing (multithreaded execution).
+ * <p />
+ * Application teams should register this BeanFactoryPostProcessor by importing spring-cache-remover.xml during ApplicationContext loading.
+ * 
+ * @author u16t
+ * @author unkd
+ */
+public class CacheAspectRemover implements BeanFactoryPostProcessor {
+
+    static final String[] CACHE_ASPECT_BEAN_NAMES = new String[] { "cachePopulatorAspect", "cacheFlushAspect", "cacheEntryFlusherAspect" };
+
+    private static final Predicate MATCHES_CACHE_ASPECT_BEAN_NAME_PREDICATE = StringInArrayOrCollectionPredicate.instanceOf(CACHE_ASPECT_BEAN_NAMES);
+
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        Assert.state(beanFactory instanceof DefaultListableBeanFactory,
+                "Could not prevent cache interception because not using DefaultListableBeanFactory.");
+
+        // Must remove cache interceptor bean definitions first, then the cache aspect bean definitions (NoSuchBeanDefinitionException otherwise)
+        removeCacheInterceptorBeanDefinitions((DefaultListableBeanFactory) beanFactory);
+        removeCacheAspectBeanDefinitions((DefaultListableBeanFactory) beanFactory);
+    }
+
+    void removeCacheInterceptorBeanDefinitions(DefaultListableBeanFactory beanFactory) {
+
+        Map<String, AspectJPointcutAdvisor> advisorMap = beanFactory.getBeansOfType(AspectJPointcutAdvisor.class);
+
+        for (Map.Entry<String, AspectJPointcutAdvisor> currentAdvisorEntry : advisorMap.entrySet()) {
+            AspectJPointcutAdvisor currentAdvisor = currentAdvisorEntry.getValue();
+            Advice currentAdvisorAdvice = currentAdvisor.getAdvice();
+            if (currentAdvisorAdvice instanceof AbstractAspectJAdvice) {
+                String aspectName = ((AbstractAspectJAdvice) currentAdvisorAdvice).getAspectName();
+                if (MATCHES_CACHE_ASPECT_BEAN_NAME_PREDICATE.evaluate(aspectName)) {
+                    beanFactory.removeBeanDefinition(currentAdvisorEntry.getKey());
+                }
+            }
+        }
+    }
+
+    void removeCacheAspectBeanDefinitions(DefaultListableBeanFactory beanFactory) {
+        for (String cacheBeanName : CACHE_ASPECT_BEAN_NAMES) {
+            beanFactory.removeBeanDefinition(cacheBeanName);
+        }
+    }
+}
+
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.apache.commons.collections.Predicate;
+import org.apache.commons.lang.StringUtils;
+
+/**
+ * Case-insensitive evaluation of whether a String is contained within a collection (array or Collection).
+ * <p />
+ * <b>Examples:</b><br />
+ * <code>
+ * Predicate stringInArrayPredicate = StringInArrayOrCollectionPredicate.instanceOf(new String[] {"foo","bar"});<br />
+ * stringInArrayPredicate.evaluate("bar") = true <br />
+ * stringInArrayPredicate.evaluate("FoO") = true <br />
+ * stringInArrayPredicate.evaluate(null) = false <br />
+ * stringInArrayPredicate.evaluate(Double.valueOf(1.23)) = false <br />
+ * stringInArrayPredicate.evaluate("FOOBAR") = false <br />
+ * </code>
+ * 
+ * @author u16t
+ */
+public class StringInArrayOrCollectionPredicate implements Predicate {
+
+    private Collection<String> stringCollection;
+
+    StringInArrayOrCollectionPredicate(Collection<String> stringCollection) {
+        this.stringCollection = stringCollection;
+    }
+
+    public static StringInArrayOrCollectionPredicate instanceOf(String[] stringArray) {
+        if (stringArray == null) {
+            throw new IllegalArgumentException("Must pass in a non-null String array.");
+        }
+        return new StringInArrayOrCollectionPredicate(Arrays.asList(stringArray));
+    }
+
+    public static StringInArrayOrCollectionPredicate instanceOf(Collection<String> stringCollection) {
+        if (stringCollection == null) {
+            throw new IllegalArgumentException("Must pass in a non-null String collection.");
+        }
+        return new StringInArrayOrCollectionPredicate(stringCollection);
+    }
+
+    public boolean evaluate(Object object) {
+        if (object instanceof String) {
+            for (String currentString : stringCollection) {
+                if (StringUtils.equalsIgnoreCase(currentString, (String) object)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+}
