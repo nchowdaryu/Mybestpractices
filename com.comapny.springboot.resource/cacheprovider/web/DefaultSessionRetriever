@@ -1,0 +1,22 @@
+import javax.servlet.http.HttpSession;
+
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+class DefaultSessionRetriever extends AbstractSessionRetriever {
+
+    DefaultSessionRetriever(AbstractSessionRetriever nextRetriever) {
+        super(nextRetriever);
+    }
+
+    @Override
+    protected HttpSession getLocalSession() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            return attributes.getRequest().getSession();
+        }
+        
+        return null;
+    }
+
+}
