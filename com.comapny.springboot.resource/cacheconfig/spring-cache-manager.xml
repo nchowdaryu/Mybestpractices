@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:gfe="http://www.springframework.org/schema/gemfire"
+    xmlns:cache="http://www.springframework.org/schema/cache"
+    xmlns:config="http://www.vanguard.com/schema/config"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+						http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+						http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+						http://www.vanguard.com/schema/config http://www.vanguard.com/schema/config/vanguard-config.xsd
+                        http://www.springframework.org/schema/gemfire http://www.springframework.org/schema/gemfire/spring-gemfire.xsd
+                        http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
+
+    <config:vanguard-property-placeholder moduleId="caching-provider" />
+
+	<bean id="cacheManager" class="com.company.spring.caching.support.CompositeEnhancedCacheManager">
+		<property name="cacheManagers">
+			<set>
+				<ref bean="ehCacheManager" />
+			</set>
+		</property>
+	</bean>
+	
+</beans>
